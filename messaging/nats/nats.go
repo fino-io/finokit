@@ -158,13 +158,16 @@ func (n *Nats) Publish(ctx context.Context, topic string, messages ...*messaging
 	}
 
 	for _, message := range messages {
+		if message == nil {
+			return messaging.ErrNilMessage
+		}
 		bytes, err := jsoniter.Marshal(message)
 		if err != nil {
 			logs.Errorw("marshal message error", "message", message, "error", err)
 			return err
 		}
 
-		if err = n.publish(topic, bytes); err != nil {
+		if err = n.publish(ctx, topic, bytes, message.Id); err != nil {
 			return logs.NewErrorw("publish message error", "topic", topic, "error", err)
 		}
 	}
@@ -172,15 +175,22 @@ func (n *Nats) Publish(ctx context.Context, topic string, messages ...*messaging
 	return nil
 }
 
-func (n *Nats) publish(topic string, msg []byte) error {
-	if n.js != nil {
-		if _, err := n.js.Publish(topic, msg); err != nil {
-			return err
-		}
-		return nil
+func (n *Nats) publish(ctx context.Context, topic string, payload []byte, messageID string) error {
+	if n.js == nil {
+		return n.conn.Publish(topic, payload)
 	}
 
-	return n.conn.Publish(topic, msg)
+	msg := nats.NewMsg(topic)
+	msg.Data = payload
+	if messageID != "" {
+		msg.Header.Set(nats.MsgIdHdr, messageID)
+	}
+	var options []nats.PubOpt
+	if _, hasDeadline := ctx.Deadline(); hasDeadline {
+		options = append(options, nats.Context(ctx))
+	}
+	_, err := n.js.PublishMsg(msg, options...)
+	return err
 }
 
 func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) error {
