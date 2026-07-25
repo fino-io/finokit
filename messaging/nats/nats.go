@@ -180,16 +180,14 @@ func (n *Nats) publish(ctx context.Context, topic string, payload []byte, messag
 		return n.conn.Publish(topic, payload)
 	}
 
-	msg := nats.NewMsg(topic)
-	msg.Data = payload
-	if messageID != "" {
-		msg.Header.Set(nats.MsgIdHdr, messageID)
-	}
 	var options []nats.PubOpt
+	if messageID != "" {
+		options = append(options, nats.MsgId(messageID))
+	}
 	if _, hasDeadline := ctx.Deadline(); hasDeadline {
 		options = append(options, nats.Context(ctx))
 	}
-	_, err := n.js.PublishMsg(msg, options...)
+	_, err := n.js.Publish(topic, payload, options...)
 	return err
 }
 
