@@ -44,6 +44,8 @@ func Register(name string, init initializer) {
 type Storage interface {
 	Read(ctx context.Context, key string, opts ...Option) (*Object, error)
 	Write(ctx context.Context, object *Object, opts ...Option) error
+	List(ctx context.Context, prefix string, opts ...Option) (ListResult, error)
+	Remove(ctx context.Context, keys []string, opts ...Option) error
 
 	Download(ctx context.Context, key, path string, opts ...Option) error
 	Upload(ctx context.Context, localFile, key string, opts ...Option) error
@@ -105,6 +107,14 @@ func Write(ctx context.Context, object *Object, opts ...Option) error {
 	return GetStorage().Write(ctx, object, opts...)
 }
 
+func List(ctx context.Context, prefix string, opts ...Option) (ListResult, error) {
+	return GetStorage().List(ctx, prefix, opts...)
+}
+
+func Remove(ctx context.Context, keys []string, opts ...Option) error {
+	return GetStorage().Remove(ctx, keys, opts...)
+}
+
 func Download(ctx context.Context, key string, path string, opts ...Option) error {
 	return GetStorage().Download(ctx, key, path, opts...)
 }
@@ -125,9 +135,13 @@ type DummyStorage struct {
 	err error
 }
 
-func NewDummyStorage() Storage                                                    { return &DummyStorage{err: errors.New("DummyStorage: not implement")} }
-func (s *DummyStorage) Read(context.Context, string, ...Option) (*Object, error)  { return nil, s.err }
-func (s *DummyStorage) Write(context.Context, *Object, ...Option) error           { return s.err }
+func NewDummyStorage() Storage                                                   { return &DummyStorage{err: errors.New("DummyStorage: not implement")} }
+func (s *DummyStorage) Read(context.Context, string, ...Option) (*Object, error) { return nil, s.err }
+func (s *DummyStorage) Write(context.Context, *Object, ...Option) error          { return s.err }
+func (s *DummyStorage) List(context.Context, string, ...Option) (ListResult, error) {
+	return ListResult{}, s.err
+}
+func (s *DummyStorage) Remove(context.Context, []string, ...Option) error         { return s.err }
 func (s *DummyStorage) Download(context.Context, string, string, ...Option) error { return s.err }
 func (s *DummyStorage) Upload(context.Context, string, string, ...Option) error   { return s.err }
 func (s *DummyStorage) PresignedDownloadURL(context.Context, string, ...Option) (string, error) {

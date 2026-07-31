@@ -33,7 +33,7 @@ func TestWrite(t *testing.T) {
 			name: "write",
 			args: args{
 				object: &storage.Object{
-					Etag:    "",
+					ETag:    "",
 					Key:     path.Join("test", "write_test1"),
 					Size:    int64(len("write test 1")),
 					Content: []byte("write test 1"),

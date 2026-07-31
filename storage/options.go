@@ -5,6 +5,7 @@ import "time"
 type RequestOptions struct {
 	Bucket      string
 	Concurrency int
+	PageToken   string
 	TTL         time.Duration
 }
 
@@ -26,11 +27,17 @@ func WithSignTTL(ttl time.Duration) Option {
 	}
 }
 
-func WithSignBucket(bucket string) Option {
+func WithBucket(bucket string) Option {
 	return func(o *RequestOptions) {
 		if bucket != "" {
 			o.Bucket = bucket
 		}
+	}
+}
+
+func WithPageToken(token string) Option {
+	return func(o *RequestOptions) {
+		o.PageToken = token
 	}
 }
 

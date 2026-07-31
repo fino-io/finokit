@@ -29,7 +29,7 @@ func TestObject_GetHttpHeaders(t *testing.T) {
 		{
 			name: "plain content type",
 			object: &Object{
-				Etag:         "1234",
+				ETag:         "1234",
 				LastModified: time.Time{},
 				ContentType:  "application/json",
 			},
@@ -40,7 +40,7 @@ func TestObject_GetHttpHeaders(t *testing.T) {
 		{
 			name: "zip content type adds encoding",
 			object: &Object{
-				Etag:         "etag-1",
+				ETag:         "etag-1",
 				LastModified: time.Time{},
 				ContentType:  "application/zip",
 			},
@@ -103,7 +103,7 @@ func TestObject_WriteHttpResponse(t *testing.T) {
 		{
 			name: "writes body and headers",
 			object: &Object{
-				Etag:        "etag-2",
+				ETag:        "etag-2",
 				ContentType: "application/json",
 				Content:     []byte(`{"ok":true}`),
 			},

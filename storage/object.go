@@ -11,11 +11,17 @@ import (
 // Object represents the metadata of an object.
 type Object struct {
 	LastModified time.Time `json:"lastModified,omitempty"`
-	Etag         string    `json:"etag,omitempty"`
+	ETag         string    `json:"etag,omitempty"`
 	Key          string    `json:"key,omitempty"`
 	ContentType  string    `json:"contentType,omitempty"`
 	Content      []byte    `json:"content,omitempty"`
 	Size         int64     `json:"size,omitempty"`
+}
+
+// ListResult contains one page of listed objects.
+type ListResult struct {
+	Objects       []Object
+	NextPageToken string
 }
 
 // var _ fs.FileInfo = (*Object)(nil)
@@ -40,8 +46,8 @@ func HTTPHeaders(x *Object) http.Header {
 		}
 	}
 
-	if len(x.Etag) > 0 {
-		headers.Set("ETag", x.Etag)
+	if len(x.ETag) > 0 {
+		headers.Set("ETag", x.ETag)
 	}
 
 	return headers

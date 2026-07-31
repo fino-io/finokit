@@ -102,7 +102,7 @@ func (m *Minio) Read(ctx context.Context, key string, opts ...storage.Option) (*
 	}()
 
 	object := &storage.Object{
-		Etag:         info.ETag,
+		ETag:         info.ETag,
 		Key:          info.Key,
 		LastModified: info.LastModified,
 		Size:         info.Size,
@@ -120,6 +120,74 @@ func (m *Minio) Read(ctx context.Context, key string, opts ...storage.Option) (*
 func (m *Minio) Write(ctx context.Context, object *storage.Object, opts ...storage.Option) error {
 	_, err := m.client.PutObject(ctx, m.bucketName, object.Key, bytes.NewReader(object.Content), object.Size, minio.PutObjectOptions{})
 	return err
+}
+
+func (m *Minio) List(ctx context.Context, prefix string, opts ...storage.Option) (storage.ListResult, error) {
+	option := storage.ApplyOptions(opts...)
+	listCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	objectsCh := m.client.ListObjects(listCtx, coalesceBucket(option.Bucket, m.bucketName), minio.ListObjectsOptions{
+		Prefix:     prefix,
+		Recursive:  true,
+		MaxKeys:    1000,
+		StartAfter: option.PageToken,
+	})
+	result := storage.ListResult{Objects: make([]storage.Object, 0, 1000)}
+	var err error
+	for object := range objectsCh {
+		if object.Err != nil {
+			err = object.Err
+			cancel()
+			break
+		}
+
+		result.Objects = append(result.Objects, storage.Object{
+			Key:          object.Key,
+			Size:         object.Size,
+			LastModified: object.LastModified,
+			ETag:         object.ETag,
+			ContentType:  object.ContentType,
+		})
+		if len(result.Objects) == 1000 {
+			result.NextPageToken = object.Key
+			cancel()
+			break
+		}
+	}
+	drainObjects(objectsCh)
+	if err != nil {
+		return storage.ListResult{}, err
+	}
+
+	return result, nil
+}
+
+func (m *Minio) Remove(ctx context.Context, keys []string, opts ...storage.Option) error {
+	if len(keys) == 0 {
+		return nil
+	}
+
+	objectsCh := make(chan minio.ObjectInfo, len(keys))
+	for _, key := range keys {
+		objectsCh <- minio.ObjectInfo{Key: key}
+	}
+	close(objectsCh)
+
+	option := storage.ApplyOptions(opts...)
+	var firstErr error
+	for removeErr := range m.client.RemoveObjects(ctx, coalesceBucket(option.Bucket, m.bucketName), objectsCh, minio.RemoveObjectsOptions{}) {
+		if firstErr == nil && removeErr.Err != nil {
+			firstErr = removeErr.Err
+		}
+	}
+	return firstErr
+}
+
+// drainObjects waits for MinIO's listing goroutine to exit after cancellation.
+func drainObjects(objects <-chan minio.ObjectInfo) {
+	for range objects {
+	}
 }
 
 func (m *Minio) Download(ctx context.Context, key string, path string, opts ...storage.Option) error {

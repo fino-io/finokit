@@ -83,7 +83,7 @@ func (c *S3Client) Read(ctx context.Context, key string, opts ...storage.Option)
 
 		return &storage.Object{
 			LastModified: lo.FromPtr(obj.LastModified),
-			Etag:         lo.FromPtr(obj.ETag),
+			ETag:         lo.FromPtr(obj.ETag),
 			Key:          key,
 			ContentType:  lo.FromPtr(obj.ContentType),
 			Content:      data,
@@ -144,6 +144,60 @@ func (c *S3Client) Write(ctx context.Context, obj *storage.Object, opts ...stora
 
 	if _, err := c.s3.PutObjectWithContext(ctx, input); err != nil {
 		return logs.NewErrorw("failed to write object", "bucket", bucket, "key", obj.Key, "error", err)
+	}
+
+	return nil
+}
+
+func (c *S3Client) List(ctx context.Context, prefix string, opts ...storage.Option) (storage.ListResult, error) {
+	options := storage.ApplyOptions(opts...)
+	bucket := lo.CoalesceOrEmpty(options.Bucket, c.cfg.BucketName)
+	input := &s3.ListObjectsV2Input{Bucket: lo.ToPtr(bucket), Prefix: lo.ToPtr(prefix)}
+	if options.PageToken != "" {
+		input.ContinuationToken = lo.ToPtr(options.PageToken)
+	}
+	output, err := c.s3.ListObjectsV2WithContext(ctx, input)
+	if err != nil {
+		return storage.ListResult{}, logs.NewErrorw("failed to list objects", "bucket", bucket, "prefix", prefix, "error", err)
+	}
+
+	objects := make([]storage.Object, 0, len(output.Contents))
+	for _, object := range output.Contents {
+		objects = append(objects, storage.Object{
+			Key:          lo.FromPtr(object.Key),
+			Size:         lo.FromPtr(object.Size),
+			LastModified: lo.FromPtr(object.LastModified),
+			ETag:         lo.FromPtr(object.ETag),
+		})
+	}
+
+	return storage.ListResult{
+		Objects:       objects,
+		NextPageToken: lo.FromPtr(output.NextContinuationToken),
+	}, nil
+}
+
+func (c *S3Client) Remove(ctx context.Context, keys []string, opts ...storage.Option) error {
+	if len(keys) == 0 {
+		return nil
+	}
+
+	options := storage.ApplyOptions(opts...)
+	bucket := lo.CoalesceOrEmpty(options.Bucket, c.cfg.BucketName)
+	objects := make([]*s3.ObjectIdentifier, len(keys))
+	for i, key := range keys {
+		objects[i] = &s3.ObjectIdentifier{Key: lo.ToPtr(key)}
+	}
+
+	output, err := c.s3.DeleteObjectsWithContext(ctx, &s3.DeleteObjectsInput{
+		Bucket: lo.ToPtr(bucket),
+		Delete: &s3.Delete{Objects: objects},
+	})
+	if err != nil {
+		return logs.NewErrorw("failed to delete objects", "bucket", bucket, "error", err)
+	}
+	if len(output.Errors) > 0 {
+		return logs.NewErrorw("failed to delete object", "bucket", bucket, "error", output.Errors[0])
 	}
 
 	return nil

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	chaosconfig "github.com/chaos-io/chaos/config"
@@ -46,7 +47,12 @@ func TestNew(t *testing.T) {
 }
 
 type stubStorage struct {
-	bucket string
+	bucket        string
+	listResult    ListResult
+	listPrefix    string
+	listOptions   []Option
+	removedKeys   []string
+	removeOptions []Option
 }
 
 func (s *stubStorage) Read(context.Context, string, ...Option) (*Object, error) {
@@ -71,6 +77,53 @@ func (s *stubStorage) PresignedDownloadURL(context.Context, string, ...Option) (
 
 func (s *stubStorage) PresignedUploadURL(context.Context, string, ...Option) (string, error) {
 	return "", nil
+}
+
+func (s *stubStorage) List(_ context.Context, prefix string, opts ...Option) (ListResult, error) {
+	s.listPrefix = prefix
+	s.listOptions = append([]Option(nil), opts...)
+	return s.listResult, nil
+}
+
+func (s *stubStorage) Remove(_ context.Context, keys []string, opts ...Option) error {
+	s.removedKeys = append([]string(nil), keys...)
+	s.removeOptions = append([]Option(nil), opts...)
+	return nil
+}
+
+func TestList(t *testing.T) {
+	stub := &stubStorage{listResult: ListResult{NextPageToken: "next-page"}}
+	useStorageForTest(t, stub)
+
+	result, err := List(context.Background(), "assets/", WithPageToken("current-page"))
+
+	require.NoError(t, err)
+	require.Equal(t, stub.listResult, result)
+	require.Equal(t, "assets/", stub.listPrefix)
+	require.Equal(t, "current-page", ApplyOptions(stub.listOptions...).PageToken)
+}
+
+func TestRemove(t *testing.T) {
+	stub := &stubStorage{}
+	useStorageForTest(t, stub)
+
+	err := Remove(context.Background(), []string{"assets/logo.svg", "assets/icon.svg"}, WithPageToken("ignored-by-provider"))
+
+	require.NoError(t, err)
+	require.Equal(t, []string{"assets/logo.svg", "assets/icon.svg"}, stub.removedKeys)
+	require.Equal(t, "ignored-by-provider", ApplyOptions(stub.removeOptions...).PageToken)
+}
+
+func useStorageForTest(t *testing.T, stub Storage) {
+	t.Helper()
+
+	storage = stub
+	storageOnce = sync.Once{}
+	storageOnce.Do(func() {})
+	t.Cleanup(func() {
+		storage = nil
+		storageOnce = sync.Once{}
+	})
 }
 
 func loadTestConfig(t *testing.T, filename, body string) {
