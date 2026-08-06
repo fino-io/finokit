@@ -39,7 +39,7 @@ func NewMinio(cfg *storage.Config) (storage.Storage, error) {
 
 	client, err := minio.New(cfg.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
-		Secure: false,
+		Secure: cfg.Secure,
 	})
 	if err != nil {
 		return nil, logs.NewErrorw(fmt.Sprintf("failed to minio connect %s", cfg.Endpoint), "error", err)

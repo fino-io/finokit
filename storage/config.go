@@ -18,7 +18,10 @@ var (
 type Config struct {
 	Vendor string `json:"vendor" default:"minio"`
 
-	Endpoint   string `json:"endpoint"`
+	// Endpoint must be host:port without a scheme.
+	Endpoint string `json:"endpoint"`
+	// Secure enables HTTPS for the MinIO client.
+	Secure     bool   `json:"secure"`
 	Region     string `json:"region"`
 	BucketName string `json:"bucketName"`
 	AccessKey  string `json:"accessKey"`
