@@ -7,7 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 
-	"github.com/chaos-io/chaos/logs"
+	"github.com/fino-io/finokit/logs"
 )
 
 var (

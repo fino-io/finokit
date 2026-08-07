@@ -4,7 +4,7 @@ package reader
 import (
 	"time"
 
-	"github.com/chaos-io/chaos/config/source"
+	"github.com/fino-io/finokit/config/source"
 )
 
 // Reader is an interface for merging changesets.

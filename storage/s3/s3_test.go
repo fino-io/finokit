@@ -3,6 +3,7 @@ package s3
 import (
 	"context"
 	"io"
+	"reflect"
 	"testing"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 	awss3 "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 
-	"github.com/chaos-io/chaos/storage"
+	"github.com/fino-io/finokit/storage"
 )
 
 type mockS3API struct {
@@ -172,7 +173,7 @@ func TestS3ClientList(t *testing.T) {
 	if len(result.Objects) != 1 {
 		t.Fatalf("objects = %d, want 1", len(result.Objects))
 	}
-	if got, want := result.Objects[0], (storage.Object{Key: "assets/logo.svg", Size: 42, LastModified: modified, ETag: "etag-1"}); got != want {
+	if got, want := result.Objects[0], (storage.Object{Key: "assets/logo.svg", Size: 42, LastModified: modified, ETag: "etag-1"}); reflect.DeepEqual(got, want) {
 		t.Fatalf("object = %#v, want %#v", got, want)
 	}
 }

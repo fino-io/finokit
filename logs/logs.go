@@ -1,8 +1,8 @@
 package logs
 
 import (
-	"github.com/chaos-io/chaos/config"
-	corelogs "github.com/chaos-io/core/go/logs"
+	corelogs "github.com/fino-io/core/go/logs"
+	"github.com/fino-io/finokit/config"
 )
 
 type Config = corelogs.Config

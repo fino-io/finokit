@@ -3,7 +3,7 @@ package messaging
 import (
 	"strings"
 
-	"github.com/chaos-io/chaos/config"
+	"github.com/fino-io/finokit/config"
 )
 
 const (

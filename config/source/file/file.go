@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/chaos-io/chaos/config/source"
+	"github.com/fino-io/finokit/config/source"
 )
 
 type file struct {
@@ -21,7 +21,7 @@ var DefaultPath = "config.json"
 
 const (
 	defaultMaxConfigSizeBytes = 16 << 20 // 16MB
-	maxConfigSizeEnvKey       = "CHAOS_CONFIG_FILE_MAX_BYTES"
+	maxConfigSizeEnvKey       = "fino_CONFIG_FILE_MAX_BYTES"
 )
 
 func (f *file) Read() (*source.ChangeSet, error) {

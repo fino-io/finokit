@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
-	chaosconfig "github.com/chaos-io/chaos/config"
+	"github.com/fino-io/finokit/config"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -130,7 +130,7 @@ func TestService(t *testing.T) {
 func loadTestConfig(t *testing.T, filename, body string) {
 	t.Helper()
 
-	if err := chaosconfig.InitDefault(chaosconfig.WithWatcherDisabled()); err != nil {
+	if err := config.InitDefault(config.WithWatcherDisabled()); err != nil {
 		t.Fatalf("InitDefault() failed: %v", err)
 	}
 
@@ -142,7 +142,7 @@ func loadTestConfig(t *testing.T, filename, body string) {
 	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 		t.Fatalf("WriteFile() failed: %v", err)
 	}
-	if err := chaosconfig.LoadPath(filepath.Join(dir, "config")); err != nil {
+	if err := config.LoadPath(filepath.Join(dir, "config")); err != nil {
 		t.Fatalf("LoadPath() failed: %v", err)
 	}
 }

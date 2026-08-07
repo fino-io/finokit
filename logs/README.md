@@ -1,6 +1,6 @@
 # Logs
 
-`logs` 是对 `github.com/chaos-io/core/go/logs` 的兼容封装。
+`logs` 是对 `github.com/fino-io/core/go/logs` 的兼容封装。
 
 - 新代码优先直接使用 `logs`
 - `logs` 保留旧包路径和调用方式

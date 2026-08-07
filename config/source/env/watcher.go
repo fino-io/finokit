@@ -3,7 +3,7 @@ package env
 import (
 	"sync"
 
-	"github.com/chaos-io/chaos/config/source"
+	"github.com/fino-io/finokit/config/source"
 )
 
 type watcher struct {

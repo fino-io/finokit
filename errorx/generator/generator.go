@@ -12,13 +12,11 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
 const (
 	DefaultPackageName  = "errcode"
-	DefaultErrorxImport = "github.com/chaos-io/chaos/errorx"
+	DefaultErrorxImport = "github.com/fino-io/finokit/errorx"
 )
 
 var (
@@ -168,7 +166,7 @@ func printUsage(w io.Writer) {
 	}
 	_, _ = fmt.Fprintln(w, "usage: errorxgen [-out output-dir] [-pkg package] [-errorx-import import-path] <yaml-file-or-dir> [more-yaml-files-or-dirs...]")
 	_, _ = fmt.Fprintln(w, "yaml format: appCode, bizCode, errorCode")
-	_, _ = fmt.Fprintln(w, "example: go run github.com/chaos-io/chaos/errorx/cmd/errorxgen -out ./internal/errcode -pkg errcode ./configs/error_code")
+	_, _ = fmt.Fprintln(w, "example: go run github.com/fino-io/fino/errorx/cmd/errorxgen -out ./internal/errcode -pkg errcode ./configs/error_code")
 }
 
 func collectYAMLFiles(inputs []string) ([]string, error) {

@@ -11,8 +11,8 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/pkg/errors"
 
-	"github.com/chaos-io/chaos/logs"
-	"github.com/chaos-io/chaos/storage"
+	"github.com/fino-io/finokit/logs"
+	"github.com/fino-io/finokit/storage"
 )
 
 // 消除隐式注册，需在项目中显式注册

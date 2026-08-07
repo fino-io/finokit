@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/chaos-io/chaos/config"
-	chaosredis "github.com/chaos-io/chaos/redis"
+	"github.com/fino-io/finokit/config"
+	finoredis "github.com/fino-io/finokit/redis"
 )
 
 const defaultConfigKey = "idgen"
@@ -35,7 +35,7 @@ func NewWithConfig(cfg *Config) (*Generator, error) {
 		return nil, err
 	}
 
-	provider, err := chaosredis.New()
+	provider, err := finoredis.New()
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func NewWithConfig(cfg *Config) (*Generator, error) {
 	return g, nil
 }
 
-func NewWithProvider(cfg *Config, provider chaosredis.Provider) (*Generator, error) {
+func NewWithProvider(cfg *Config, provider finoredis.Provider) (*Generator, error) {
 	if provider == nil || provider.Raw() == nil {
 		return nil, ErrNilClient
 	}

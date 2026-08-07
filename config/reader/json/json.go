@@ -6,10 +6,10 @@ import (
 
 	"dario.cat/mergo"
 
-	"github.com/chaos-io/chaos/config/encoder"
-	"github.com/chaos-io/chaos/config/encoder/json"
-	"github.com/chaos-io/chaos/config/reader"
-	"github.com/chaos-io/chaos/config/source"
+	"github.com/fino-io/finokit/config/encoder"
+	"github.com/fino-io/finokit/config/encoder/json"
+	"github.com/fino-io/finokit/config/reader"
+	"github.com/fino-io/finokit/config/source"
 )
 
 type jsonReader struct {

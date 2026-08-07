@@ -1,10 +1,10 @@
 package reader
 
 import (
-	"github.com/chaos-io/chaos/config/encoder"
-	"github.com/chaos-io/chaos/config/encoder/json"
-	"github.com/chaos-io/chaos/config/encoder/xml"
-	"github.com/chaos-io/chaos/config/encoder/yaml"
+	"github.com/fino-io/finokit/config/encoder"
+	"github.com/fino-io/finokit/config/encoder/json"
+	"github.com/fino-io/finokit/config/encoder/xml"
+	"github.com/fino-io/finokit/config/encoder/yaml"
 )
 
 type Options struct {

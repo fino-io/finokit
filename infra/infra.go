@@ -5,15 +5,15 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/chaos-io/chaos/db"
-	"github.com/chaos-io/chaos/idgen"
-	idredis "github.com/chaos-io/chaos/idgen/redis"
-	"github.com/chaos-io/chaos/messaging"
-	"github.com/chaos-io/chaos/messaging/nats"
-	"github.com/chaos-io/chaos/redis"
-	"github.com/chaos-io/chaos/storage"
-	"github.com/chaos-io/chaos/storage/minio"
-	"github.com/chaos-io/chaos/storage/s3"
+	"github.com/fino-io/finokit/db"
+	"github.com/fino-io/finokit/idgen"
+	idredis "github.com/fino-io/finokit/idgen/redis"
+	"github.com/fino-io/finokit/messaging"
+	"github.com/fino-io/finokit/messaging/nats"
+	"github.com/fino-io/finokit/redis"
+	"github.com/fino-io/finokit/storage"
+	"github.com/fino-io/finokit/storage/minio"
+	"github.com/fino-io/finokit/storage/s3"
 )
 
 var registerInfraDriversOnce sync.Once

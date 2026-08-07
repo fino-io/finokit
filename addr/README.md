@@ -18,7 +18,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/chaos-io/chaos/addr"
+	"github.com/fino-io/finokit/addr"
 )
 
 func main() {

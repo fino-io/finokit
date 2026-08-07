@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/chaos-io/chaos/config"
+	"github.com/fino-io/finokit/config"
 	"github.com/stretchr/testify/require"
 )
 

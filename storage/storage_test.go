@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	chaosconfig "github.com/chaos-io/chaos/config"
+	"github.com/fino-io/finokit/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,7 +22,7 @@ func TestNew(t *testing.T) {
 	t.Run("new with config", func(t *testing.T) {
 		st, err := NewWithConfig(&Config{
 			Vendor:     "stub",
-			BucketName: "chaos",
+			BucketName: "fino",
 		})
 		require.NoError(t, err)
 		require.IsType(t, &stubStorage{}, st)
@@ -31,14 +31,14 @@ func TestNew(t *testing.T) {
 	t.Run("rejects unknown vendor", func(t *testing.T) {
 		st, err := NewWithConfig(&Config{
 			Vendor:     "missing",
-			BucketName: "chaos",
+			BucketName: "fino",
 		})
 		require.ErrorIs(t, err, ErrUnsupportedVendor)
 		require.Nil(t, st)
 	})
 
 	t.Run("loads config", func(t *testing.T) {
-		loadTestConfig(t, "storage.yaml", "storage:\n  vendor: stub-config\n  bucketName: chaos\n")
+		loadTestConfig(t, "storage.yaml", "storage:\n  vendor: stub-config\n  bucketName: fino\n")
 
 		st, err := New()
 		require.NoError(t, err)
@@ -129,7 +129,7 @@ func useStorageForTest(t *testing.T, stub Storage) {
 func loadTestConfig(t *testing.T, filename, body string) {
 	t.Helper()
 
-	if err := chaosconfig.InitDefault(chaosconfig.WithWatcherDisabled()); err != nil {
+	if err := config.InitDefault(config.WithWatcherDisabled()); err != nil {
 		t.Fatalf("InitDefault() failed: %v", err)
 	}
 
@@ -141,7 +141,7 @@ func loadTestConfig(t *testing.T, filename, body string) {
 	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 		t.Fatalf("WriteFile() failed: %v", err)
 	}
-	if err := chaosconfig.LoadPath(filepath.Join(dir, "config")); err != nil {
+	if err := config.LoadPath(filepath.Join(dir, "config")); err != nil {
 		t.Fatalf("LoadPath() failed: %v", err)
 	}
 }

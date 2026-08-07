@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chaos-io/chaos/messaging"
+	"github.com/fino-io/finokit/messaging"
 )
 
 var errConfigureSubscription = errors.New("configure subscription")

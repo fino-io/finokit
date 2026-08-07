@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"runtime/debug"
 
-	"github.com/chaos-io/chaos/logs"
+	"github.com/fino-io/finokit/logs"
 )
 
 func Recover(ctx context.Context, errPtr *error) {

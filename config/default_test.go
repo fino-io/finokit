@@ -8,10 +8,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/chaos-io/chaos/config/source"
-	"github.com/chaos-io/chaos/config/source/env"
-	"github.com/chaos-io/chaos/config/source/file"
-	"github.com/chaos-io/chaos/config/source/memory"
+	"github.com/fino-io/finokit/config/source"
+	"github.com/fino-io/finokit/config/source/env"
+	"github.com/fino-io/finokit/config/source/file"
+	"github.com/fino-io/finokit/config/source/memory"
 )
 
 func writeTempConfigFile(t *testing.T, content string) string {

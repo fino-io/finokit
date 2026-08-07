@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 
-	"github.com/chaos-io/chaos/config"
+	"github.com/fino-io/finokit/config"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"

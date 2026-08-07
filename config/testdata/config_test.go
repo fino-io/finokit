@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/chaos-io/chaos/config"
-	"github.com/chaos-io/chaos/config/reader"
+	"github.com/fino-io/finokit/config"
+	"github.com/fino-io/finokit/config/reader"
 )
 
 type ProjectLogs struct {

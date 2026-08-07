@@ -12,9 +12,9 @@ import (
 	"github.com/go-viper/mapstructure/v2"
 	jsoniter "github.com/json-iterator/go"
 
-	"github.com/chaos-io/chaos/config/reader"
-	"github.com/chaos-io/chaos/config/source"
-	"github.com/chaos-io/chaos/config/tag"
+	"github.com/fino-io/finokit/config/reader"
+	"github.com/fino-io/finokit/config/source"
+	"github.com/fino-io/finokit/config/tag"
 )
 
 type jsonValues struct {

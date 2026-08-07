@@ -5,8 +5,8 @@ import (
 
 	natsgo "github.com/nats-io/nats.go"
 
-	"github.com/chaos-io/chaos/config/encoder"
-	"github.com/chaos-io/chaos/config/source"
+	"github.com/fino-io/finokit/config/encoder"
+	"github.com/fino-io/finokit/config/source"
 )
 
 type watcher struct {

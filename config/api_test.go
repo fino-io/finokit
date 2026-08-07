@@ -11,12 +11,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	loaderpkg "github.com/chaos-io/chaos/config/loader"
-	loadermemory "github.com/chaos-io/chaos/config/loader/memory"
-	readerpkg "github.com/chaos-io/chaos/config/reader"
-	readerjson "github.com/chaos-io/chaos/config/reader/json"
-	"github.com/chaos-io/chaos/config/source"
-	sourcememory "github.com/chaos-io/chaos/config/source/memory"
+	loaderpkg "github.com/fino-io/finokit/config/loader"
+	loadermemory "github.com/fino-io/finokit/config/loader/memory"
+	readerpkg "github.com/fino-io/finokit/config/reader"
+	readerjson "github.com/fino-io/finokit/config/reader/json"
+	"github.com/fino-io/finokit/config/source"
+	sourcememory "github.com/fino-io/finokit/config/source/memory"
 )
 
 func isolateDefaultConfig(t *testing.T) {
@@ -61,7 +61,7 @@ func TestInitDefaultAndGlobalAccessors(t *testing.T) {
 	err := InitDefault(
 		WithWatcherDisabled(),
 		WithSource(sourcememory.NewSource(sourcememory.WithJSON([]byte(`{
-			"service": {"name": "chaos"},
+			"service": {"name": "fino"},
 			"backup": {"name": "fallback"}
 		}`)))),
 	)
@@ -70,11 +70,11 @@ func TestInitDefaultAndGlobalAccessors(t *testing.T) {
 
 	v1, err := Get("service.name")
 	require.NoError(t, err)
-	require.Equal(t, "chaos", v1.String(""))
+	require.Equal(t, "fino", v1.String(""))
 
 	v2, err := Get("service", "name")
 	require.NoError(t, err)
-	require.Equal(t, "chaos", v2.String(""))
+	require.Equal(t, "fino", v2.String(""))
 
 	var picked string
 	err = ScanFrom(&picked, "service.missing", "backup.name", "service.name")
@@ -83,7 +83,7 @@ func TestInitDefaultAndGlobalAccessors(t *testing.T) {
 
 	var snapshot map[string]map[string]string
 	require.NoError(t, Scan(&snapshot))
-	require.Equal(t, "chaos", snapshot["service"]["name"])
+	require.Equal(t, "fino", snapshot["service"]["name"])
 
 	require.NoError(t, Sync())
 	require.NotEmpty(t, Bytes())
@@ -152,7 +152,7 @@ func TestLoadHelpers(t *testing.T) {
 		require.NoError(t, InitDefault(WithWatcherDisabled()))
 
 		dir := t.TempDir()
-		writeFile(t, filepath.Join(dir, "a.yaml"), "app:\n  name: chaos\n")
+		writeFile(t, filepath.Join(dir, "a.yaml"), "app:\n  name: fino\n")
 		writeFile(t, filepath.Join(dir, "nested", "b.json"), `{"db":{"port":5432}}`)
 		writeFile(t, filepath.Join(dir, "ignored.txt"), "ignore")
 
@@ -160,7 +160,7 @@ func TestLoadHelpers(t *testing.T) {
 
 		appName, err := Get("app.name")
 		require.NoError(t, err)
-		require.Equal(t, "chaos", appName.String(""))
+		require.Equal(t, "fino", appName.String(""))
 
 		dbPort, err := Get("db.port")
 		require.NoError(t, err)
@@ -220,7 +220,7 @@ func TestDefaultConfigProvider(t *testing.T) {
 	isolateDefaultConfig(t)
 	require.NoError(t, InitDefault(
 		WithWatcherDisabled(),
-		WithSource(sourcememory.NewSource(sourcememory.WithJSON([]byte(`{"project":{"name":"chaos"}}`)))),
+		WithSource(sourcememory.NewSource(sourcememory.WithJSON([]byte(`{"project":{"name":"fino"}}`)))),
 	))
 
 	p := NewDefaultConfigProvider()
@@ -229,7 +229,7 @@ func TestDefaultConfigProvider(t *testing.T) {
 	require.NoError(t, err)
 	gotVal, ok := gotAny.(readerpkg.Value)
 	require.True(t, ok)
-	require.Equal(t, "chaos", gotVal.String(""))
+	require.Equal(t, "fino", gotVal.String(""))
 
 	var data struct {
 		Project struct {
@@ -237,11 +237,11 @@ func TestDefaultConfigProvider(t *testing.T) {
 		} `json:"project"`
 	}
 	require.NoError(t, p.Scan(&data))
-	require.Equal(t, "chaos", data.Project.Name)
+	require.Equal(t, "fino", data.Project.Name)
 
 	var name string
 	require.NoError(t, p.ScanFrom(&name, "project.missing", "project.name"))
-	require.Equal(t, "chaos", name)
+	require.Equal(t, "fino", name)
 }
 
 func TestValueDefaults(t *testing.T) {

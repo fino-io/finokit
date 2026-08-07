@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chaos-io/chaos/messaging"
+	"github.com/fino-io/finokit/messaging"
 	gonats "github.com/nats-io/nats.go"
 )
 

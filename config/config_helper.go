@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/chaos-io/chaos/config/reader"
-	"github.com/chaos-io/chaos/config/source"
-	"github.com/chaos-io/chaos/config/source/file"
+	"github.com/fino-io/finokit/config/reader"
+	"github.com/fino-io/finokit/config/source"
+	"github.com/fino-io/finokit/config/source/file"
 )
 
 var supportedFileSuffixes = map[string]bool{

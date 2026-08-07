@@ -4,29 +4,29 @@ package loader
 import (
 	"context"
 
-	"github.com/chaos-io/chaos/config/reader"
-	"github.com/chaos-io/chaos/config/source"
+	"github.com/fino-io/finokit/config/reader"
+	"github.com/fino-io/finokit/config/source"
 )
 
 // Loader manages loading sources.
 type Loader interface {
-	// Stop the loader
+	// Close Stop the loader
 	Close() error
 	// Load the sources
 	Load(...source.Source) error
-	// A Snapshot of loaded config
+	// Snapshot A Snapshot of loaded config
 	Snapshot() (*Snapshot, error)
-	// Force sync of sources
+	// Sync Force sync of sources
 	Sync() error
 	// Watch for changes
 	Watch(...string) (Watcher, error)
-	// Name of loader
+	// String Name of loader
 	String() string
 }
 
 // Watcher lets you watch sources and returns a merged ChangeSet.
 type Watcher interface {
-	// First call to next may return the current Snapshot
+	// Next  First call to next may return the current Snapshot
 	// If you are watching a path then only the data from
 	// that path is returned.
 	Next() (*Snapshot, error)

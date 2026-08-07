@@ -1,14 +1,14 @@
-module github.com/chaos-io/chaos
+module github.com/fino-io/finokit
 
 go 1.24.12
 
 require (
 	dario.cat/mergo v1.0.1
-	github.com/alicebob/miniredis/v2 v2.37.0
+	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/bitly/go-simplejson v0.5.1
-	github.com/chaos-io/core/go v0.0.0-20260723055627-5cde8cc84861
 	github.com/fatih/structs v1.1.0
+	github.com/fino-io/core/go v0.0.0-20260807025508-1eede25b9d23
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/golang/mock v1.6.0

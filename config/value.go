@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"github.com/chaos-io/chaos/config/reader"
+	"github.com/fino-io/finokit/config/reader"
 )
 
 type value struct{}

@@ -1,7 +1,0 @@
-storage:
-  vendor: s3
-  endpoint: http://127.0.0.1:9000
-  region: us-east-1
-  bucketName: chaos
-  accessKey: accessKey
-  secretKey: secretKey

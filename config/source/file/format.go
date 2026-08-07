@@ -3,7 +3,7 @@ package file
 import (
 	"strings"
 
-	"github.com/chaos-io/chaos/config/encoder"
+	"github.com/fino-io/finokit/config/encoder"
 )
 
 func format(p string, e encoder.Encoder) string {

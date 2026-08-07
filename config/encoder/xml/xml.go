@@ -3,7 +3,7 @@ package xml
 import (
 	"encoding/xml"
 
-	"github.com/chaos-io/chaos/config/encoder"
+	"github.com/fino-io/finokit/config/encoder"
 )
 
 type xmlEncoder struct{}

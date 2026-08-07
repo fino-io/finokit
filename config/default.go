@@ -6,11 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chaos-io/chaos/config/loader"
-	"github.com/chaos-io/chaos/config/loader/memory"
-	"github.com/chaos-io/chaos/config/reader"
-	"github.com/chaos-io/chaos/config/reader/json"
-	"github.com/chaos-io/chaos/config/source"
+	"github.com/fino-io/finokit/config/loader"
+	"github.com/fino-io/finokit/config/loader/memory"
+	"github.com/fino-io/finokit/config/reader"
+	"github.com/fino-io/finokit/config/reader/json"
+	"github.com/fino-io/finokit/config/source"
 )
 
 type config struct {

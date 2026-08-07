@@ -1,9 +1,9 @@
 package memory
 
 import (
-	"github.com/chaos-io/chaos/config/loader"
-	"github.com/chaos-io/chaos/config/reader"
-	"github.com/chaos-io/chaos/config/source"
+	"github.com/fino-io/finokit/config/loader"
+	"github.com/fino-io/finokit/config/reader"
+	"github.com/fino-io/finokit/config/source"
 )
 
 // WithSource appends a source to list of sources.

@@ -8,8 +8,8 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/chaos-io/chaos/config"
-	"github.com/chaos-io/chaos/config/source/file"
+	"github.com/fino-io/finokit/config"
+	"github.com/fino-io/finokit/config/source/file"
 )
 
 func TestConfig(t *testing.T) {
@@ -93,7 +93,7 @@ func TestWithFS(t *testing.T) {
 }
 
 func TestFileRead_ExceedsMaxSize(t *testing.T) {
-	t.Setenv("CHAOS_CONFIG_FILE_MAX_BYTES", "1")
+	t.Setenv("fino_CONFIG_FILE_MAX_BYTES", "1")
 
 	data := []byte(`{"foo":"bar"}`)
 	path := filepath.Join(os.TempDir(), fmt.Sprintf("file.%d", time.Now().UnixNano()))

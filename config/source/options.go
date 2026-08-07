@@ -3,8 +3,8 @@ package source
 import (
 	"context"
 
-	"github.com/chaos-io/chaos/config/encoder"
-	"github.com/chaos-io/chaos/config/encoder/json"
+	"github.com/fino-io/finokit/config/encoder"
+	"github.com/fino-io/finokit/config/encoder/json"
 )
 
 type Options struct {

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chaos-io/chaos/config/source"
-	"github.com/chaos-io/chaos/config/source/file"
+	"github.com/fino-io/finokit/config/source"
+	"github.com/fino-io/finokit/config/source/file"
 )
 
 // createTestFile a local helper to creates a temporary file with the given data

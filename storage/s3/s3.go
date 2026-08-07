@@ -15,8 +15,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/samber/lo"
 
-	"github.com/chaos-io/chaos/logs"
-	"github.com/chaos-io/chaos/storage"
+	"github.com/fino-io/finokit/logs"
+	"github.com/fino-io/finokit/storage"
 )
 
 type S3Client struct {

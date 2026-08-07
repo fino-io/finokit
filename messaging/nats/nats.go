@@ -12,8 +12,8 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/nats-io/nats.go"
 
-	"github.com/chaos-io/chaos/logs"
-	"github.com/chaos-io/chaos/messaging"
+	"github.com/fino-io/finokit/logs"
+	"github.com/fino-io/finokit/messaging"
 )
 
 const defaultFetchWait = time.Second

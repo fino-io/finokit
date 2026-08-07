@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/chaos-io/chaos/config/reader"
-	"github.com/chaos-io/chaos/config/source"
-	sourcememory "github.com/chaos-io/chaos/config/source/memory"
+	"github.com/fino-io/finokit/config/reader"
+	"github.com/fino-io/finokit/config/source"
+	sourcememory "github.com/fino-io/finokit/config/source/memory"
 )
 
 func TestNewFileSourcesFiltersBySuffix(t *testing.T) {
@@ -27,7 +27,7 @@ func TestNewFileSourcesFiltersBySuffix(t *testing.T) {
 
 func TestDefaultSourcesUsesConfigPathEnv(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir+"/config.yaml", "name: chaos\n")
+	writeFile(t, dir+"/config.yaml", "name: fino\n")
 	t.Setenv("CONFIG_PATH", dir)
 
 	sources := defaultSources()

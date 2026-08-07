@@ -3,7 +3,7 @@ package memory
 import (
 	"context"
 
-	"github.com/chaos-io/chaos/config/source"
+	"github.com/fino-io/finokit/config/source"
 )
 
 type changeSetKey struct{}

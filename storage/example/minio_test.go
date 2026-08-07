@@ -9,9 +9,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/chaos-io/chaos/storage/minio"
-
-	"github.com/chaos-io/chaos/storage"
+	"github.com/fino-io/finokit/storage"
+	"github.com/fino-io/finokit/storage/minio"
 )
 
 var ctx = context.Background()

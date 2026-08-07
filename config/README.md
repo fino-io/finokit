@@ -12,7 +12,7 @@ package main
 import (
 	"log"
 
-	"github.com/chaos-io/chaos/config"
+	"github.com/fino-io/finokit/config"
 )
 
 type AppConfig struct {
@@ -103,7 +103,7 @@ for {
 或使用回调：
 
 ```go
-import "github.com/chaos-io/chaos/config/reader"
+import "github.com/fino-io/finokit/config/reader"
 
 closer, err := config.WatchFunc(func(v reader.Value) {
 	// 配置变化时回调
@@ -118,7 +118,7 @@ if err == nil {
 如果不希望使用包级全局状态，可自行创建实例：
 
 ```go
-import "github.com/chaos-io/chaos/config/source/file"
+import "github.com/fino-io/finokit/config/source/file"
 
 cfg, err := config.NewConfig(
 	config.WithSource(file.NewSource(file.WithPath("./configs/config.yaml"))),

@@ -71,8 +71,8 @@ package main
 import (
     "log"
 
-    "github.com/chaos-io/chaos/messaging"
-    "github.com/chaos-io/chaos/messaging/nats"
+    "github.com/fino-io/finokit/messaging"
+    "github.com/fino-io/finokit/messaging/nats"
 )
 
 func main() {
@@ -135,8 +135,8 @@ package main
 import (
     "log"
 
-    "github.com/chaos-io/chaos/messaging"
-    "github.com/chaos-io/chaos/messaging/nats"
+    "github.com/fino-io/finokit/messaging"
+    "github.com/fino-io/finokit/messaging/nats"
 )
 
 func main() {

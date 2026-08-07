@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/chaos-io/chaos/config"
+	"github.com/fino-io/finokit/config"
 	goredis "github.com/redis/go-redis/v9"
 )
 

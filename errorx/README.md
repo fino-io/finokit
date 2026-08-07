@@ -64,7 +64,7 @@ appCode=6, bizCode=12, code=1001 => 600121001
 在业务服务仓库中执行：
 
 ```bash
-go run github.com/chaos-io/chaos/errorx/cmd/errorxgen \
+go run github.com/fino-io/fino/errorx/cmd/errorxgen \
   -out ./errcode \
   -pkg errcode \
   ./configs/error_code
@@ -74,13 +74,13 @@ go run github.com/chaos-io/chaos/errorx/cmd/errorxgen \
 
 - `-out`：生成代码目录。
 - `-pkg`：生成代码的包名，通常使用 `errcode`。
-- `-errorx-import`：`errorx` 的 import path，默认 `github.com/chaos-io/chaos/errorx`。
+- `-errorx-import`：`errorx` 的 import path，默认 `github.com/fino-io/fino/errorx`。
 - 最后一个参数：YAML 文件或目录。传目录时会递归读取 `.yaml` 和 `.yml` 文件。
 
 也可以在业务服务中加入 `go:generate`：
 
 ```go
-//go:generate go run github.com/chaos-io/chaos/errorx/cmd/errorxgen -out ./internal/errcode -pkg errcode ./configs/error_code
+//go:generate go run github.com/fino-io/fino/errorx/cmd/errorxgen -out ./internal/errcode -pkg errcode ./configs/error_code
 ```
 
 然后执行：

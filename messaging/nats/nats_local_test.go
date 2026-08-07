@@ -14,9 +14,9 @@ import (
 	gonats "github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/chaos-io/chaos/config"
-	"github.com/chaos-io/chaos/logs"
-	"github.com/chaos-io/chaos/messaging"
+	"github.com/fino-io/finokit/config"
+	"github.com/fino-io/finokit/logs"
+	"github.com/fino-io/finokit/messaging"
 )
 
 func Test_PublishStartTask(t *testing.T) {

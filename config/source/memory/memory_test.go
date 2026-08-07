@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chaos-io/chaos/config/source"
+	"github.com/fino-io/finokit/config/source"
 )
 
 func TestMemoryRead_EmptySource(t *testing.T) {

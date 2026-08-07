@@ -3,7 +3,7 @@ package json
 import (
 	"testing"
 
-	"github.com/chaos-io/chaos/config/source"
+	"github.com/fino-io/finokit/config/source"
 )
 
 func TestReader(t *testing.T) {

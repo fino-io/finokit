@@ -3,7 +3,7 @@ package json
 import (
 	"encoding/json"
 
-	"github.com/chaos-io/chaos/config/encoder"
+	"github.com/fino-io/finokit/config/encoder"
 )
 
 type jsonEncoder struct{}
