@@ -12,6 +12,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -212,7 +214,7 @@ func collectYAMLFiles(inputs []string) ([]string, error) {
 func loadSpec(path string) (File, error) {
 	var spec File
 
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- paths are explicitly provided as local YAML inputs.
 	if err != nil {
 		return spec, fmt.Errorf("read %s: %w", path, err)
 	}
@@ -295,10 +297,10 @@ func generateGoCode(inputFile inputFile, cfg Config) (string, error) {
 	}
 
 	outputPath := filepath.Join(cfg.OutputDir, inputFile.FileName+".go")
-	if err := os.MkdirAll(cfg.OutputDir, 0o755); err != nil {
+	if err := os.MkdirAll(cfg.OutputDir, 0o750); err != nil {
 		return "", err
 	}
-	if err := os.WriteFile(outputPath, source, 0o644); err != nil {
+	if err := os.WriteFile(outputPath, source, 0o600); err != nil {
 		return "", err
 	}
 

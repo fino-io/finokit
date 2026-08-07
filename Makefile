@@ -1,6 +1,6 @@
 .PHONY: env test mockgen lint sec vuln verify
 
-GOPROXY := https://goproxy.cn,direct
+GOPROXY := https://goproxy.cn,https://proxy.golang.org,direct
 export GOPROXY
 GO_MOCKGEN=$(shell which mockgen 2> /dev/null || echo '')
 GO_MOCKGEN_URI= github.com/golang/mock/mockgen@latest
