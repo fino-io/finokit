@@ -1,7 +1,6 @@
 package redis
 
 import (
-	"context"
 	"errors"
 	"strings"
 
@@ -42,13 +41,13 @@ func NewWithConfig(cfg *Config) (*Generator, error) {
 
 	g, err := NewWithClient(provider.Raw(), normalized.ServerIDs)
 	if err != nil {
-		_ = provider.Close(context.Background())
+		_ = provider.Close()
 		return nil, err
 	}
 
 	g.namespace = normalized.Namespace
 	g.closeFn = func() error {
-		return provider.Close(context.Background())
+		return provider.Close()
 	}
 	return g, nil
 }

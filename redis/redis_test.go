@@ -50,7 +50,7 @@ func TestNew(t *testing.T) {
 		clusterCLI, err := NewWithConfig(&Config{Addresses: []string{" 127.0.0.1:6379 ", "127.0.0.1:6379", "127.0.0.1:6380"}})
 		require.NoError(t, err)
 		t.Cleanup(func() {
-			require.NoError(t, clusterCLI.Close(context.Background()))
+			require.NoError(t, clusterCLI.Close())
 		})
 
 		cluster, ok := clusterCLI.Raw().(*goredis.ClusterClient)
@@ -59,7 +59,7 @@ func TestNew(t *testing.T) {
 
 		singleCLI, err := NewWithConfig(&Config{Addresses: []string{"127.0.0.1:6379"}})
 		require.NoError(t, err)
-		t.Cleanup(func() { require.NoError(t, singleCLI.Close(context.Background())) })
+		t.Cleanup(func() { require.NoError(t, singleCLI.Close()) })
 
 		raw, ok := singleCLI.Raw().(*goredis.Client)
 		require.True(t, ok)
@@ -78,7 +78,7 @@ func TestNew(t *testing.T) {
 		cli, err := NewWithConfig(&Config{Addresses: []string{srv.Addr()}})
 		require.NoError(t, err)
 		t.Cleanup(func() {
-			require.NoError(t, cli.Close(context.Background()))
+			require.NoError(t, cli.Close())
 		})
 
 		ctx := context.Background()
@@ -96,7 +96,7 @@ func TestNew(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, cli)
 		t.Cleanup(func() {
-			require.NoError(t, cli.Close(context.Background()))
+			require.NoError(t, cli.Close())
 		})
 	})
 }
@@ -114,7 +114,7 @@ func TestService(t *testing.T) {
 		cli, err := NewWithConfig(&Config{Addresses: []string{srv.Addr()}})
 		require.NoError(t, err)
 		t.Cleanup(func() {
-			require.NoError(t, cli.Close(context.Background()))
+			require.NoError(t, cli.Close())
 		})
 
 		require.NoError(t, cli.Ping(context.Background()))
@@ -123,7 +123,7 @@ func TestService(t *testing.T) {
 	t.Run("nil safety", func(t *testing.T) {
 		var svc *Service
 		require.ErrorIs(t, svc.Ping(context.Background()), ErrNilService)
-		require.NoError(t, svc.Close(context.Background()))
+		require.NoError(t, svc.Close())
 	})
 }
 

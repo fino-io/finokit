@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"io"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -12,6 +13,8 @@ import (
 type Provider interface {
 	NewSession(ctx context.Context, opts ...Option) *gorm.DB
 	Transaction(ctx context.Context, fn func(tx *gorm.DB) error, opts ...Option) error
+
+	io.Closer
 }
 
 var _ Provider = (*DB)(nil)
@@ -62,6 +65,18 @@ func (d *DB) Transaction(ctx context.Context, fn func(tx *gorm.DB) error, opts .
 		return ErrNilSessionDB
 	}
 	return session.Transaction(fn)
+}
+
+func (d *DB) Close() error {
+	if d == nil || d.DB == nil {
+		return nil
+	}
+
+	sqlDB, err := d.DB.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDB.Close()
 }
 
 func applyOptions(opts ...Option) *option {

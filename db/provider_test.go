@@ -66,6 +66,21 @@ func TestProviderTransaction(t *testing.T) {
 	}
 }
 
+func TestProviderClose(t *testing.T) {
+	raw, err := NewWithConfig(&Config{
+		Driver: SqliteDriver,
+		DSN:    ":memory:",
+	})
+	if err != nil {
+		t.Fatalf("NewWithConfig() error = %v", err)
+	}
+
+	var provider Provider = raw
+	if err := provider.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+}
+
 func TestProviderNilDB(t *testing.T) {
 	var provider Provider = (*DB)(nil)
 

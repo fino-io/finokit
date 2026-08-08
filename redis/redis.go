@@ -1,7 +1,6 @@
 package redis
 
 import (
-	"context"
 	"errors"
 
 	"github.com/fino-io/finokit/config"
@@ -80,26 +79,4 @@ func Wrap(raw goredis.UniversalClient) (*Service, error) {
 		return nil, ErrNilRawClient
 	}
 	return &Service{raw: raw}, nil
-}
-
-func (s *Service) Raw() goredis.UniversalClient {
-	if s == nil {
-		return nil
-	}
-	return s.raw
-}
-
-func (s *Service) Ping(ctx context.Context) error {
-	if s == nil || s.raw == nil {
-		return ErrNilService
-	}
-	return s.raw.Ping(ctx).Err()
-}
-
-func (s *Service) Close(ctx context.Context) error {
-	_ = ctx
-	if s == nil || s.raw == nil {
-		return nil
-	}
-	return s.raw.Close()
 }
