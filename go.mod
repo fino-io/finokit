@@ -13,6 +13,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
+	github.com/joho/godotenv v1.5.1
 	github.com/json-iterator/go v1.1.12
 	github.com/minio/minio-go/v7 v7.0.95
 	github.com/nats-io/nats.go v1.39.1

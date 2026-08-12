@@ -57,7 +57,7 @@ _ = config.LoadPathWithSuffix("./configs", "prod")
 // 命令行参数（需先 flag.Parse()）
 _ = config.LoadFlag()
 
-// 自动探测默认目录（conf/config/configs，可配 CONFIG_PATH）
+// 加载当前运行目录的 .env，并探测 conf/config/configs（可配 CONFIG_PATH）
 _ = config.LoadDefaultSources()
 ```
 

@@ -12,6 +12,7 @@ import (
 	"github.com/fino-io/finokit/config/reader"
 	"github.com/fino-io/finokit/config/source"
 	"github.com/fino-io/finokit/config/source/file"
+	"github.com/joho/godotenv"
 )
 
 var supportedFileSuffixes = map[string]bool{
@@ -21,37 +22,47 @@ var supportedFileSuffixes = map[string]bool{
 	"yaml": true,
 }
 
-// LoadDefaultSources discovers and loads config sources from conventional
-// directories. This must be called explicitly by applications.
+// LoadDefaultSources loads .env and config sources from the working directory.
 func LoadDefaultSources() error {
-	return Load(defaultSources()...)
+	sources, err := defaultSources()
+	if err != nil {
+		return err
+	}
+	return Load(sources...)
 }
 
-func defaultSources() []source.Source {
-	workDir, _ := os.Getwd()
+func defaultSources() ([]source.Source, error) {
+	workDir, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+
 	dirs := []string{
 		filepath.Join(workDir, "conf"),
 		filepath.Join(workDir, "config"),
 		filepath.Join(workDir, "configs"),
 	}
 
-	if configPath := os.Getenv("CONFIG_PATH"); len(configPath) > 0 {
+	if configPath := os.Getenv("CONFIG_PATH"); configPath != "" {
 		dirs = append([]string{configPath}, dirs...)
 	}
 
 	if strings.Contains(workDir, "/cmd/") || strings.HasSuffix(workDir, "/cmd") {
-		dirs = append(dirs, []string{"../configs", "../../configs"}...)
+		dirs = append(dirs, "../configs", "../../configs")
 	}
 
 	var sources []source.Source
+	env := os.Getenv("DEPLOY_ENV")
 	for _, dir := range dirs {
-		if sources = newFileSources(dir, os.Getenv("DEPLOY_ENV")); len(sources) > 0 {
+		if sources = newFileSources(dir, env); len(sources) > 0 {
 			break
 		}
 	}
 
-	// sources = append(sources, env.NewSource())
-	return sources
+	return sources, nil
 }
 
 func newFileSources(dir string, env string) []source.Source {
@@ -65,26 +76,20 @@ func newFileSources(dir string, env string) []source.Source {
 		return files[i].Name() < files[j].Name()
 	})
 
-	for _, f := range files {
-		if f.IsDir() {
-			ss := newFileSources(filepath.Join(dir, f.Name()), env)
-			sources = append(sources, ss...)
-		} else {
-			segments := strings.Split(f.Name(), ".")
-			suffix := strings.TrimPrefix(strings.ToLower(filepath.Ext(f.Name())), ".")
-			if !supportedFileSuffixes[suffix] {
-				continue
-			}
-			p := filepath.Join(dir, f.Name())
-			if len(env) > 0 {
-				name := strings.Join(segments[:len(segments)-1], ".")
-				if strings.HasSuffix(name, env) {
-					sources = append(sources, file.NewSource(file.WithPath(p)))
-				}
-			} else {
-				sources = append(sources, file.NewSource(file.WithPath(p)))
-			}
+	for _, entry := range files {
+		if entry.IsDir() {
+			sources = append(sources, newFileSources(filepath.Join(dir, entry.Name()), env)...)
+			continue
 		}
+
+		ext := filepath.Ext(entry.Name())
+		if !supportedFileSuffixes[strings.TrimPrefix(strings.ToLower(ext), ".")] {
+			continue
+		}
+		if env != "" && !strings.HasSuffix(strings.TrimSuffix(entry.Name(), ext), env) {
+			continue
+		}
+		sources = append(sources, file.NewSource(file.WithPath(filepath.Join(dir, entry.Name()))))
 	}
 
 	return sources

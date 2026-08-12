@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -30,8 +31,34 @@ func TestDefaultSourcesUsesConfigPathEnv(t *testing.T) {
 	writeFile(t, dir+"/config.yaml", "name: fino\n")
 	t.Setenv("CONFIG_PATH", dir)
 
-	sources := defaultSources()
+	sources, err := defaultSources()
+	require.NoError(t, err)
 	require.NotEmpty(t, sources)
+}
+
+func TestDefaultSourcesLoadsDotEnv(t *testing.T) {
+	workDir := t.TempDir()
+	writeFile(t, workDir+"/.env", `FINOKIT_DOTENV_TEST="loaded value" # comment`)
+
+	previousWorkDir, err := os.Getwd()
+	require.NoError(t, err)
+	require.NoError(t, os.Chdir(workDir))
+	t.Cleanup(func() { require.NoError(t, os.Chdir(previousWorkDir)) })
+
+	const key = "FINOKIT_DOTENV_TEST"
+	previousValue, existed := os.LookupEnv(key)
+	require.NoError(t, os.Unsetenv(key))
+	t.Cleanup(func() {
+		if existed {
+			require.NoError(t, os.Setenv(key, previousValue))
+		} else {
+			require.NoError(t, os.Unsetenv(key))
+		}
+	})
+
+	_, err = defaultSources()
+	require.NoError(t, err)
+	require.Equal(t, "loaded value", os.Getenv(key))
 }
 
 func TestWatchCloserCloseIdempotent(t *testing.T) {
