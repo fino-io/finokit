@@ -89,6 +89,71 @@ errorCode:
 	}
 }
 
+func TestGenerateWritesOneMarkdownDocumentWithPlatformFirst(t *testing.T) {
+	inputDir := t.TempDir()
+	outputDir := t.TempDir()
+	docPath := filepath.Join(t.TempDir(), "docs", "error-codes.md")
+	writeFile(t, filepath.Join(inputDir, "z_task.yaml"), `
+appCode: 6
+bizCode: 12
+errorCode:
+  - name: TaskNotFound
+    code: 1001
+    message: "task | not found"
+    description: task does not exist
+`)
+	writeFile(t, filepath.Join(inputDir, "platform.yaml"), `
+appCode: 6
+bizCode: 1
+errorCode:
+  - name: InvalidArgument
+    code: 1001
+`)
+	writeFile(t, filepath.Join(inputDir, "account.yaml"), `
+appCode: 6
+bizCode: 2
+errorCode:
+  - name: AccountDisabled
+    code: 1001
+    countInSLA: false
+    httpStatus: 403
+`)
+
+	outputs, err := Generate(Config{
+		Inputs:      []string{inputDir},
+		OutputDir:   outputDir,
+		DocOutput:   docPath,
+		PackageName: "errcode",
+	})
+	if err != nil {
+		t.Fatalf("Generate returned error: %v", err)
+	}
+	if len(outputs) != 4 || outputs[len(outputs)-1] != docPath {
+		t.Fatalf("unexpected outputs: %v", outputs)
+	}
+
+	content, err := os.ReadFile(docPath)
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	got := string(content)
+	platformIndex := strings.Index(got, "## platform")
+	accountIndex := strings.Index(got, "## account")
+	taskIndex := strings.Index(got, "## z_task")
+	if platformIndex == -1 || accountIndex == -1 || taskIndex == -1 || platformIndex > accountIndex || accountIndex > taskIndex {
+		t.Fatalf("unexpected document order:\n%s", got)
+	}
+	for _, want := range []string{
+		"| platform | platform.yaml | 6 | 1 | 1 | 600011001 - 600011001 |",
+		"| 600121001 | TaskNotFound | task \\| not found | task does not exist | 500（默认） | 是（默认） |",
+		"| 600021001 | AccountDisabled | Service Internal Error（默认） | — | 403 | 否 |",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("document missing %q:\n%s", want, got)
+		}
+	}
+}
+
 func TestValidateRejectsDuplicatesAndInvalidNames(t *testing.T) {
 	err := validateInputFiles([]inputFile{
 		{

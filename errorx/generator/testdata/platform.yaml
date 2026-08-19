@@ -1,0 +1,63 @@
+appCode: 1
+bizCode: 6
+errorCode:
+  - name: PlatformBadRequest
+    code: 400
+    message: 'bad request'
+    description: request cannot be processed
+    countInSLA: false
+    httpStatus: 400
+  - name: PlatformUnauthenticated
+    code: 401
+    message: 'authentication required'
+    description: request has no valid authentication
+    countInSLA: false
+    httpStatus: 401
+  - name: PlatformForbidden
+    code: 403
+    message: 'permission denied'
+    description: authenticated caller lacks permission
+    countInSLA: false
+    httpStatus: 403
+  - name: PlatformNotFound
+    code: 404
+    message: 'resource not found'
+    description: requested platform resource does not exist
+    countInSLA: false
+    httpStatus: 404
+  - name: PlatformConflict
+    code: 409
+    message: 'resource conflict'
+    description: request conflicts with current resource state
+    countInSLA: false
+    httpStatus: 409
+  - name: PlatformTooManyRequests
+    code: 429
+    message: 'too many requests'
+    description: request was rate limited
+    countInSLA: false
+    httpStatus: 429
+  - name: PlatformInternalServerError
+    code: 500
+    message: 'internal server error'
+    description: unexpected platform failure
+    countInSLA: false
+    httpStatus: 500
+  - name: PlatformBadGateway
+    code: 502
+    message: 'bad gateway'
+    description: upstream service returned an invalid response
+    countInSLA: false
+    httpStatus: 502
+  - name: PlatformServiceUnavailable
+    code: 503
+    message: 'service unavailable'
+    description: platform dependency is unavailable
+    countInSLA: false
+    httpStatus: 503
+  - name: PlatformGatewayTimeout
+    code: 504
+    message: 'gateway timeout'
+    description: platform dependency timed out
+    countInSLA: false
+    httpStatus: 504

@@ -7,6 +7,7 @@ import (
 	"go/format"
 	"io"
 	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -19,6 +20,7 @@ import (
 const (
 	DefaultPackageName  = "errcode"
 	DefaultErrorxImport = "github.com/fino-io/finokit/errorx"
+	defaultMessage      = "Service Internal Error"
 )
 
 var (
@@ -29,6 +31,7 @@ var (
 type Config struct {
 	Inputs       []string
 	OutputDir    string
+	DocOutput    string
 	PackageName  string
 	ErrorxImport string
 }
@@ -82,6 +85,7 @@ func ParseArgs(args []string, stderr io.Writer) (Config, error) {
 		ErrorxImport: DefaultErrorxImport,
 	}
 	flagSet.StringVar(&cfg.OutputDir, "out", cfg.OutputDir, "output directory")
+	flagSet.StringVar(&cfg.DocOutput, "doc-out", cfg.DocOutput, "markdown documentation output path")
 	flagSet.StringVar(&cfg.PackageName, "pkg", cfg.PackageName, "generated package name")
 	flagSet.StringVar(&cfg.ErrorxImport, "errorx-import", cfg.ErrorxImport, "errorx import path")
 
@@ -146,6 +150,13 @@ func Generate(cfg Config) ([]string, error) {
 		}
 		outputPaths = append(outputPaths, outputPath)
 	}
+	if strings.TrimSpace(cfg.DocOutput) != "" {
+		outputPath, err := generateMarkdown(inputFiles, cfg.DocOutput)
+		if err != nil {
+			return nil, err
+		}
+		outputPaths = append(outputPaths, outputPath)
+	}
 	return outputPaths, nil
 }
 
@@ -166,9 +177,9 @@ func printUsage(w io.Writer) {
 	if w == nil {
 		return
 	}
-	_, _ = fmt.Fprintln(w, "usage: errorxgen [-out output-dir] [-pkg package] [-errorx-import import-path] <yaml-file-or-dir> [more-yaml-files-or-dirs...]")
+	_, _ = fmt.Fprintln(w, "usage: errorxgen [-out output-dir] [-doc-out markdown-file] [-pkg package] [-errorx-import import-path] <yaml-file-or-dir> [more-yaml-files-or-dirs...]")
 	_, _ = fmt.Fprintln(w, "yaml format: appCode, bizCode, errorCode")
-	_, _ = fmt.Fprintln(w, "example: go run github.com/fino-io/fino/errorx/cmd/errorxgen -out ./internal/errcode -pkg errcode ./configs/error_code")
+	_, _ = fmt.Fprintln(w, "example: go run github.com/fino-io/fino/errorx/cmd/errorxgen -out ./internal/errcode -doc-out ./docs/error-codes.md -pkg errcode ./configs/error_code")
 }
 
 func collectYAMLFiles(inputs []string) ([]string, error) {
@@ -305,6 +316,122 @@ func generateGoCode(inputFile inputFile, cfg Config) (string, error) {
 	}
 
 	return outputPath, nil
+}
+
+func generateMarkdown(inputFiles []inputFile, outputPath string) (string, error) {
+	orderedFiles := append([]inputFile(nil), inputFiles...)
+	sort.SliceStable(orderedFiles, func(i, j int) bool {
+		iPlatform := strings.EqualFold(orderedFiles[i].BizName, "platform")
+		jPlatform := strings.EqualFold(orderedFiles[j].BizName, "platform")
+		if iPlatform != jPlatform {
+			return iPlatform
+		}
+		return strings.ToLower(orderedFiles[i].BizName) < strings.ToLower(orderedFiles[j].BizName)
+	})
+
+	var buf bytes.Buffer
+	_, _ = fmt.Fprintln(&buf, "# 业务错误码")
+	_, _ = fmt.Fprintln(&buf)
+	_, _ = fmt.Fprintln(&buf, "> 此文件由 `errorxgen` 自动生成，请勿手动修改。")
+	_, _ = fmt.Fprintln(&buf)
+	_, _ = fmt.Fprintln(&buf, "本文档是业务错误码的统一索引。模块顺序为：`platform` 优先，其它模块按定义文件名升序排列；同一模块内按错误子码升序排列。")
+	_, _ = fmt.Fprintln(&buf)
+	_, _ = fmt.Fprintln(&buf, "## 编码与字段约定")
+	_, _ = fmt.Fprintln(&buf)
+	_, _ = fmt.Fprintln(&buf, "- `错误码`：稳定的机器可读业务标识，格式为 `appCode(1位) + bizCode(4位) + code(4位)`；客户端和服务间应按错误码判断，不要按消息文本判断。")
+	_, _ = fmt.Fprintln(&buf, "- `Reason / 名称`：稳定的业务原因名称，用于代码调用、日志检索和错误判断；名称一旦发布不应复用。")
+	_, _ = fmt.Fprintln(&buf, "- `消息模板`：面向调用方或用户的可读消息，可包含 `{key}` 占位符；不承载底层异常和敏感信息。")
+	_, _ = fmt.Fprintln(&buf, "- `场景说明`：说明错误何时发生，帮助调用方和维护者正确处理。")
+	_, _ = fmt.Fprintln(&buf, "- `HTTP 状态`：协议层映射，不参与业务错误码唯一性；未配置时使用 `500`。")
+	_, _ = fmt.Fprintln(&buf, "- `SLA 统计`：仅用于稳定性指标和告警策略；未配置时使用 `是`。运行时的 `extra/metadata` 属于单次错误上下文，不在错误码目录中固定。")
+	_, _ = fmt.Fprintln(&buf)
+	_, _ = fmt.Fprintln(&buf, "## 总览")
+	_, _ = fmt.Fprintln(&buf)
+	_, _ = fmt.Fprintln(&buf, "| 业务模块 | 定义文件 | appCode | bizCode | 错误数 | 错误码范围 |")
+	_, _ = fmt.Fprintln(&buf, "| --- | --- | ---: | ---: | ---: | --- |")
+	for _, inputFile := range orderedFiles {
+		definitions := append([]Definition(nil), inputFile.Spec.ErrorCode...)
+		sort.SliceStable(definitions, func(i, j int) bool {
+			return definitions[i].Code < definitions[j].Code
+		})
+		firstCode := composeErrorCode(inputFile.Spec.AppCode, inputFile.Spec.BizCode, definitions[0].Code)
+		lastCode := composeErrorCode(inputFile.Spec.AppCode, inputFile.Spec.BizCode, definitions[len(definitions)-1].Code)
+		_, _ = fmt.Fprintf(&buf, "| %s | %s | %d | %d | %d | %d - %d |\n",
+			markdownCell(inputFile.BizName),
+			markdownCell(filepath.Base(inputFile.Path)),
+			inputFile.Spec.AppCode,
+			inputFile.Spec.BizCode,
+			len(definitions),
+			firstCode,
+			lastCode,
+		)
+	}
+	for _, inputFile := range orderedFiles {
+		_, _ = fmt.Fprintf(&buf, "\n## %s\n\n", markdownCell(inputFile.BizName))
+		_, _ = fmt.Fprintln(&buf, "| 错误码 | Reason / 名称 | 消息模板 | 场景说明 | HTTP 状态 | SLA 统计 |")
+		_, _ = fmt.Fprintln(&buf, "| ---: | --- | --- | --- | ---: | --- |")
+		definitions := append([]Definition(nil), inputFile.Spec.ErrorCode...)
+		sort.SliceStable(definitions, func(i, j int) bool {
+			return definitions[i].Code < definitions[j].Code
+		})
+		for _, errDef := range definitions {
+			_, _ = fmt.Fprintf(&buf, "| %d | %s | %s | %s | %s | %s |\n",
+				composeErrorCode(inputFile.Spec.AppCode, inputFile.Spec.BizCode, errDef.Code),
+				markdownCell(errDef.Name),
+				markdownCell(markdownMessage(errDef)),
+				markdownCell(defaultMarkdownCell(errDef.Description)),
+				markdownHTTPStatus(errDef),
+				markdownCountInSLA(errDef),
+			)
+		}
+	}
+
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
+		return "", err
+	}
+	if err := os.WriteFile(outputPath, buf.Bytes(), 0o600); err != nil {
+		return "", err
+	}
+	return outputPath, nil
+}
+
+func defaultMarkdownCell(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return "—"
+	}
+	return value
+}
+
+func markdownMessage(errDef Definition) string {
+	message := strings.TrimSpace(errDef.Message)
+	if message == "" {
+		return defaultMessage + "（默认）"
+	}
+	return message
+}
+
+func markdownHTTPStatus(errDef Definition) string {
+	if errDef.HTTPStatus == 0 {
+		return fmt.Sprintf("%d（默认）", http.StatusInternalServerError)
+	}
+	return fmt.Sprintf("%d", errDef.HTTPStatus)
+}
+
+func markdownCountInSLA(errDef Definition) string {
+	value := "是"
+	if !errDef.countInSLA() {
+		value = "否"
+	}
+	if errDef.CountInSLA == nil {
+		return value + "（默认）"
+	}
+	return value
+}
+
+func markdownCell(value string) string {
+	value = strings.ReplaceAll(value, "|", "\\|")
+	value = strings.ReplaceAll(value, "\r", " ")
+	return strings.ReplaceAll(value, "\n", " ")
 }
 
 func buildGoCode(bizName string, spec File, cfg Config) ([]byte, error) {

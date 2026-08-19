@@ -66,6 +66,7 @@ appCode=6, bizCode=12, code=1001 => 600121001
 ```bash
 go run github.com/fino-io/fino/errorx/cmd/errorxgen \
   -out ./errcode \
+  -doc-out ./docs/error-codes.md \
   -pkg errcode \
   ./configs/error_code
 ```
@@ -73,15 +74,30 @@ go run github.com/fino-io/fino/errorx/cmd/errorxgen \
 参数说明：
 
 - `-out`：生成代码目录。
+- `-doc-out`：生成的错误码 Markdown 文档路径，可选；所有 YAML 会汇总到同一个文档中，`platform.yaml` 始终排在最前，其它文件按文件名升序排列。
 - `-pkg`：生成代码的包名，通常使用 `errcode`。
 - `-errorx-import`：`errorx` 的 import path，默认 `github.com/fino-io/fino/errorx`。
 - 最后一个参数：YAML 文件或目录。传目录时会递归读取 `.yaml` 和 `.yml` 文件。
 
+本地调试
+
+```bash
+go run ./cmd/errorxgen \
+  -out "./testdata/errcode" \
+  -doc-out "./testdata/error-codes.md" \
+  -pkg errcode \
+  ./generator/testdata
+```
+
 也可以在业务服务中加入 `go:generate`：
 
 ```go
-//go:generate go run github.com/fino-io/fino/errorx/cmd/errorxgen -out ./internal/errcode -pkg errcode ./configs/error_code
+//go:generate go run github.com/fino-io/fino/errorx/cmd/errorxgen -out ./internal/errcode -doc-out ./docs/error-codes.md -pkg errcode ./configs/error_code
 ```
+
+文档为单个 Markdown 文件，包含字段规范、错误码总览和按业务模块拆分的错误码表。`platform` 模块始终排在最前，其它模块按定义文件名升序排列，模块内按错误子码升序排列。未配置 `httpStatus`、`countInSLA` 或 `message` 时，文档会标注运行时实际使用的默认值。
+
+错误码文档遵循以下约定：错误码用于机器判断，`name`（Reason）用于稳定的业务原因标识，`message` 用于面向调用方的可读提示，`httpStatus` 仅表示协议层映射，`countInSLA` 仅表示观测统计策略；运行时 `extra/metadata` 只携带单次错误上下文，不作为错误码定义的一部分。
 
 然后执行：
 
