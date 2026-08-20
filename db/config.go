@@ -87,6 +87,7 @@ func cloneGORMConfig(cfg *gorm.Config) *gorm.Config {
 	if cfg == nil {
 		return &gorm.Config{
 			NamingStrategy: namingStrategy,
+			TranslateError: true,
 		}
 	}
 
