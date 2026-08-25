@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -34,6 +35,54 @@ func TestDefaultSourcesUsesConfigPathEnv(t *testing.T) {
 	sources, err := defaultSources()
 	require.NoError(t, err)
 	require.NotEmpty(t, sources)
+}
+
+func TestServiceSourcesSelectsServiceDirectory(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root+"/configs/auth-server/config.yaml", "name: auth\n")
+	writeFile(t, root+"/configs/user-server/config.yaml", "name: user\n")
+
+	previousWorkDir, err := os.Getwd()
+	require.NoError(t, err)
+	require.NoError(t, os.Chdir(root))
+	t.Cleanup(func() { require.NoError(t, os.Chdir(previousWorkDir)) })
+
+	sources, err := serviceSources("auth-server")
+	require.NoError(t, err)
+	require.Len(t, sources, 1)
+	changeSet, err := sources[0].Read()
+	require.NoError(t, err)
+	require.Equal(t, "name: auth\n", string(changeSet.Data))
+}
+
+func TestServiceSourcesSupportsMountedServiceDirectory(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root+"/configs/config.yaml", "name: auth\n")
+
+	previousWorkDir, err := os.Getwd()
+	require.NoError(t, err)
+	require.NoError(t, os.Chdir(root))
+	t.Cleanup(func() { require.NoError(t, os.Chdir(previousWorkDir)) })
+
+	sources, err := serviceSources("auth-server")
+	require.NoError(t, err)
+	require.Len(t, sources, 1)
+	changeSet, err := sources[0].Read()
+	require.NoError(t, err)
+	require.Equal(t, "name: auth\n", string(changeSet.Data))
+}
+
+func TestServiceSourcesRejectsInvalidServiceName(t *testing.T) {
+	invalidNames := []string{
+		"../auth-server",
+		".",
+		"..",
+		filepath.Join(t.TempDir(), "auth-server"),
+	}
+	for _, name := range invalidNames {
+		_, err := serviceSources(name)
+		require.EqualError(t, err, "service name must be a single path segment")
+	}
 }
 
 func TestDefaultSourcesLoadsDotEnv(t *testing.T) {

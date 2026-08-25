@@ -51,6 +51,9 @@ _ = config.LoadFile("./configs/config.yaml")
 // 目录递归加载
 _ = config.LoadPath("./configs")
 
+// 按服务加载配置；支持 configs/<service>，也支持已挂载的单服务 configs 目录
+_ = config.LoadServiceConfig("auth-server")
+
 // 按后缀环境筛选（示例：*.prod.yaml）
 _ = config.LoadPathWithSuffix("./configs", "prod")
 
