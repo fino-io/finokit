@@ -161,13 +161,17 @@ func (n *Nats) Publish(ctx context.Context, topic string, messages ...*messaging
 		if message == nil {
 			return messaging.ErrNilMessage
 		}
+		publishCtx, span := startProducer(ctx, topic)
 		bytes, err := jsoniter.Marshal(message)
 		if err != nil {
+			endSpan(span, err)
 			logs.Errorw("marshal message error", "message", message, "error", err)
 			return err
 		}
 
-		if err = n.publish(ctx, topic, bytes, message.Id); err != nil {
+		err = n.publish(publishCtx, topic, bytes, message.Id)
+		endSpan(span, err)
+		if err != nil {
 			return logs.NewErrorw("publish message error", "topic", topic, "error", err)
 		}
 	}
@@ -176,8 +180,10 @@ func (n *Nats) Publish(ctx context.Context, topic string, messages ...*messaging
 }
 
 func (n *Nats) publish(ctx context.Context, topic string, payload []byte, messageID string) error {
+	message := &nats.Msg{Subject: topic, Data: payload, Header: nats.Header{}}
+	injectContext(ctx, message.Header)
 	if n.js == nil {
-		return n.conn.Publish(topic, payload)
+		return n.conn.PublishMsg(message)
 	}
 
 	var options []nats.PubOpt
@@ -187,7 +193,7 @@ func (n *Nats) publish(ctx context.Context, topic string, payload []byte, messag
 	if _, hasDeadline := ctx.Deadline(); hasDeadline {
 		options = append(options, nats.Context(ctx))
 	}
-	_, err := n.js.Publish(topic, payload, options...)
+	_, err := n.js.PublishMsg(message, options...)
 	return err
 }
 
@@ -200,8 +206,13 @@ func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) error {
 	}
 
 	callback := func(raw *nats.Msg) {
+		ctx := extractContext(context.Background(), raw.Header)
+		ctx, span := startConsumer(ctx, s.Topic)
+		defer span.End()
+
 		msg := &messaging.SubMessage{}
 		if err := jsoniter.Unmarshal(raw.Data, msg); err != nil {
+			recordSpanError(span, err)
 			logs.Warnw("Nats: failed to unmarshal data form topic", "topic", s.Topic, "error", err)
 			if n.js != nil {
 				if termErr := raw.Term(); termErr != nil {
@@ -234,9 +245,13 @@ func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) error {
 			})
 		}
 
-		ctx := messaging.WithTopic(context.Background(), s.Topic)
+		ctx = messaging.WithTopic(ctx, s.Topic)
 		ctx = messaging.WithMessage(ctx, msg)
-		completeMessage(msg, h(ctx, s, msg), n.js != nil)
+		err := h(ctx, s, msg)
+		if err != nil {
+			recordSpanError(span, err)
+		}
+		completeMessage(msg, err, n.js != nil)
 	}
 
 	var (
