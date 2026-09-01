@@ -1,6 +1,8 @@
 package logs
 
 import (
+	"context"
+
 	corelogs "github.com/fino-io/core/go/logs"
 	"github.com/fino-io/finokit/config"
 )
@@ -28,7 +30,7 @@ func NewDefaultConfig() *Config {
 }
 
 func NewLoggerWith(cfg *Config) Logger {
-	return corelogs.NewLoggerWith(cfg)
+	return withTrace(corelogs.NewLoggerWith(cfg))
 }
 
 // ReloadDefaultServiceFromConfig re-applies the package logger settings from the
@@ -49,11 +51,11 @@ func ReloadDefaultServiceFromConfig() error {
 }
 
 func DefaultLogger() Logger {
-	return corelogs.DefaultLogger()
+	return withTrace(corelogs.DefaultLogger())
 }
 
 func SetLogger(logger Logger) {
-	corelogs.SetLogger(logger)
+	corelogs.SetLogger(withTrace(logger))
 }
 
 func SetLogLevel(level Level) {
@@ -132,10 +134,19 @@ func NewErrorw(msg string, keysAndValues ...interface{}) error {
 	return defaultService().NewErrorw(msg, keysAndValues...)
 }
 
+func WithFields(ctx context.Context, fields ...Field) context.Context {
+	return corelogs.WithFields(ctx, fields...)
+}
+
+// Ctx returns the default logging service bound to ctx.
+func Ctx(ctx context.Context) *Service {
+	return NewService(corelogs.DefaultLogger()).WithContext(ctx)
+}
+
 func NewService(logger Logger) *Service {
-	return corelogs.NewService(logger)
+	return corelogs.NewService(withTrace(logger))
 }
 
 func defaultService() *corelogs.Service {
-	return corelogs.NewServiceWithCallerSkip(corelogs.DefaultLogger(), 1)
+	return corelogs.NewServiceWithCallerSkip(withTrace(corelogs.DefaultLogger()), 1)
 }

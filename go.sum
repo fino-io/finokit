@@ -23,8 +23,8 @@ github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkp
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/fatih/structs v1.1.0 h1:Q7juDM0QtcnhCpeyLGQKyg4TOIghuNXrkL32pHAUMxo=
 github.com/fatih/structs v1.1.0/go.mod h1:9NiDSp5zOcgEDl+j00MP/WkGVPOlPRLejGD8Ga6PJ7M=
-github.com/fino-io/core/go v0.0.0-20260807025508-1eede25b9d23 h1:cJ/gpGjEXkIsLlcJ1SrceEzwll37E8RAsH3dLEH5gus=
-github.com/fino-io/core/go v0.0.0-20260807025508-1eede25b9d23/go.mod h1:G2E4fANg1NTSbaJ+hOcgPTUYeKS/OLAaaF7ousKFVoM=
+github.com/fino-io/core/go v0.0.0-20260901015255-1d46040b458f h1:CsCz/7Cm3Fnwp1BwdIBsv49BcJP+NIGDHEs/CRQaThY=
+github.com/fino-io/core/go v0.0.0-20260901015255-1d46040b458f/go.mod h1:G2E4fANg1NTSbaJ+hOcgPTUYeKS/OLAaaF7ousKFVoM=
 github.com/fsnotify/fsnotify v1.6.0 h1:n+5WquG0fcWoWp6xPWfHdbskMCQaFnG6PfBrh1Ky4HY=
 github.com/fsnotify/fsnotify v1.6.0/go.mod h1:sl3t1tCWJFWoRz9R8WJCbQihKKwmorjAbSClcnxKAGw=
 github.com/go-ini/ini v1.67.0 h1:z6ZrTEZqSWOTyH2FlglNbNgARyHG8oLW9gMELqKr06A=
