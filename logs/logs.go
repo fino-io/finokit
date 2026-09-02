@@ -33,13 +33,9 @@ func NewLoggerWith(cfg *Config) Logger {
 	return withTrace(corelogs.NewLoggerWith(cfg))
 }
 
-// ReloadDefaultServiceFromConfig re-applies the package logger settings from the
-// current default config. Call this after config.InitDefault and Load*.
-func ReloadDefaultServiceFromConfig() error {
-	if !config.IsDefaultInitialized() {
-		return nil
-	}
-
+// InitFromConfig initializes the package default logger from the current
+// default config. Call this after config.InitDefault and Load*.
+func InitFromConfig() error {
 	cfg := NewDefaultConfig()
 	if err := config.ScanFrom(cfg, "logs"); err != nil {
 		return err

@@ -31,7 +31,7 @@ func TestDefaultServiceLoadsLogsConfig(t *testing.T) {
 `), 0o644))
 	require.NoError(t, config.LoadPath(dir))
 
-	require.NoError(t, ReloadDefaultServiceFromConfig())
+	require.NoError(t, InitFromConfig())
 	logger := DefaultLogger()
 	require.Equal(t, InfoLevel, logger.GetLevel())
 }
