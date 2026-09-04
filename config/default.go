@@ -38,6 +38,7 @@ func newConfig(opts ...Option) (Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if !c.opts.WithWatcherDisabled {
 		go c.run()
 	}

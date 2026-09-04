@@ -51,6 +51,7 @@ func defaultSources() ([]source.Source, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
@@ -75,6 +76,7 @@ func serviceSources(service string) ([]source.Source, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
@@ -96,6 +98,7 @@ func serviceSources(service string) ([]source.Source, error) {
 	if sources := firstFileSources(serviceDirs, env, true); len(sources) > 0 {
 		return sources, nil
 	}
+
 	return firstFileSources(directDirs, env, false), nil
 }
 

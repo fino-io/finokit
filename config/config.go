@@ -131,6 +131,7 @@ func ScanFrom(v interface{}, key string, alternatives ...string) error {
 	if v == nil {
 		return ErrScanTargetNilPointer
 	}
+
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return ErrScanTargetNilPointer
@@ -146,6 +147,7 @@ func ScanFrom(v interface{}, key string, alternatives ...string) error {
 		if val.Null() && i < len(keys)-1 {
 			continue
 		}
+
 		if err := val.Scan(v); err != nil {
 			return fmt.Errorf("scan config key %q into %T: %w", k, v, err)
 		}
