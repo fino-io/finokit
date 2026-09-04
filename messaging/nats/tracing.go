@@ -2,6 +2,7 @@ package nats
 
 import (
 	"context"
+	"strings"
 
 	gonats "github.com/nats-io/nats.go"
 	"go.opentelemetry.io/otel"
@@ -30,6 +31,7 @@ func startConsumer(ctx context.Context, topic string) (context.Context, trace.Sp
 }
 
 func startSpan(ctx context.Context, operation, topic string, kind trace.SpanKind) (context.Context, trace.Span) {
+	topic = telemetryString(topic)
 	return tracer.Start(ctx, operation+" "+topic,
 		trace.WithSpanKind(kind),
 		trace.WithAttributes(
@@ -47,8 +49,37 @@ func endSpan(span trace.Span, err error) {
 }
 
 func recordSpanError(span trace.Span, err error) {
-	span.RecordError(err)
-	span.SetStatus(codes.Error, err.Error())
+	if err == nil {
+		return
+	}
+
+	// Keep the original error for business logic; only the telemetry copy is sanitized.
+	rawMessage := err.Error()
+	message := telemetryString(rawMessage)
+	recordedErr := err
+	if message != rawMessage {
+		recordedErr = sanitizedError{cause: err, message: message}
+	}
+
+	span.RecordError(recordedErr)
+	span.SetStatus(codes.Error, message)
+}
+
+func telemetryString(value string) string {
+	return strings.ToValidUTF8(value, "\uFFFD")
+}
+
+type sanitizedError struct {
+	cause   error
+	message string
+}
+
+func (e sanitizedError) Error() string {
+	return e.message
+}
+
+func (e sanitizedError) Unwrap() error {
+	return e.cause
 }
 
 func injectContext(ctx context.Context, header gonats.Header) {
