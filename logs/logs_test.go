@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func TestDefaultServiceLoadsLogsConfig(t *testing.T) {
+func TestNewConfigLoadsLogsConfig(t *testing.T) {
 	prev := DefaultLogger()
 	t.Cleanup(func() {
 		SetLogger(prev)
@@ -31,7 +31,7 @@ func TestDefaultServiceLoadsLogsConfig(t *testing.T) {
 `), 0o644))
 	require.NoError(t, config.LoadPath(dir))
 
-	require.NoError(t, InitFromConfig())
+	require.NoError(t, NewConfig())
 	logger := DefaultLogger()
 	require.Equal(t, InfoLevel, logger.GetLevel())
 }
