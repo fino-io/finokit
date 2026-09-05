@@ -47,7 +47,10 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("normalizes and applies defaults", func(t *testing.T) {
-		clusterCLI, err := NewWithConfig(&Config{Addresses: []string{" 127.0.0.1:6379 ", "127.0.0.1:6379", "127.0.0.1:6380"}})
+		clusterCLI, err := NewWithConfig(&Config{
+			Addresses: []string{" 127.0.0.1:6379 ", "127.0.0.1:6379", "127.0.0.1:6380"},
+			ReadOnly:  true,
+		})
 		require.NoError(t, err)
 		t.Cleanup(func() {
 			require.NoError(t, clusterCLI.Close())
@@ -56,6 +59,7 @@ func TestNew(t *testing.T) {
 		cluster, ok := clusterCLI.Raw().(*goredis.ClusterClient)
 		require.True(t, ok)
 		assert.Equal(t, []string{"127.0.0.1:6379", "127.0.0.1:6380"}, cluster.Options().Addrs)
+		assert.True(t, cluster.Options().ReadOnly)
 
 		singleCLI, err := NewWithConfig(&Config{Addresses: []string{"127.0.0.1:6379"}})
 		require.NoError(t, err)

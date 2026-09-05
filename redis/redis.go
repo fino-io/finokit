@@ -36,44 +36,24 @@ func NewWithConfig(cfg *Config) (*Service, error) {
 		return nil, err
 	}
 
-	var cli goredis.UniversalClient
-	if len(normalized.Addresses) == 1 {
-		cli = goredis.NewClient(&goredis.Options{
-			Addr:                  normalized.Addresses[0],
-			Username:              normalized.Username,
-			Password:              normalized.Password,
-			DB:                    normalized.DB,
-			MaxRetries:            normalized.MaxRetries,
-			MinRetryBackoff:       normalized.MinRetryBackoff,
-			MaxRetryBackoff:       normalized.MaxRetryBackoff,
-			DialTimeout:           normalized.DialTimeout,
-			ReadTimeout:           normalized.ReadTimeout,
-			WriteTimeout:          normalized.WriteTimeout,
-			ContextTimeoutEnabled: normalized.ContextTimeoutEnabled,
-			PoolSize:              normalized.PoolSize,
-			MinIdleConns:          normalized.MinIdleConns,
-			PoolTimeout:           normalized.PoolTimeout,
-			TLSConfig:             normalized.TLSConfig,
-		})
-	} else {
-		cli = goredis.NewClusterClient(&goredis.ClusterOptions{
-			Addrs:                 normalized.Addresses,
-			Username:              normalized.Username,
-			Password:              normalized.Password,
-			ReadOnly:              normalized.ReadOnly,
-			MaxRetries:            normalized.MaxRetries,
-			MinRetryBackoff:       normalized.MinRetryBackoff,
-			MaxRetryBackoff:       normalized.MaxRetryBackoff,
-			DialTimeout:           normalized.DialTimeout,
-			ReadTimeout:           normalized.ReadTimeout,
-			WriteTimeout:          normalized.WriteTimeout,
-			ContextTimeoutEnabled: normalized.ContextTimeoutEnabled,
-			PoolSize:              normalized.PoolSize,
-			MinIdleConns:          normalized.MinIdleConns,
-			PoolTimeout:           normalized.PoolTimeout,
-			TLSConfig:             normalized.TLSConfig,
-		})
-	}
+	cli := goredis.NewUniversalClient(&goredis.UniversalOptions{
+		Addrs:                 normalized.Addresses,
+		Username:              normalized.Username,
+		Password:              normalized.Password,
+		DB:                    normalized.DB,
+		MaxRetries:            normalized.MaxRetries,
+		MinRetryBackoff:       normalized.MinRetryBackoff,
+		MaxRetryBackoff:       normalized.MaxRetryBackoff,
+		DialTimeout:           normalized.DialTimeout,
+		ReadTimeout:           normalized.ReadTimeout,
+		WriteTimeout:          normalized.WriteTimeout,
+		ContextTimeoutEnabled: normalized.ContextTimeoutEnabled,
+		PoolSize:              normalized.PoolSize,
+		MinIdleConns:          normalized.MinIdleConns,
+		PoolTimeout:           normalized.PoolTimeout,
+		ReadOnly:              normalized.ReadOnly,
+		TLSConfig:             normalized.TLSConfig,
+	})
 
 	return &Service{raw: cli}, nil
 }
