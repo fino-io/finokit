@@ -4,11 +4,15 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 )
 
 type Client struct {
 	queue         Queue
 	subscriptions []*Subscription
+
+	closeOnce sync.Once
+	closeErr  error
 }
 
 func NewWithQueue(queue Queue) (*Client, error) {
@@ -19,10 +23,16 @@ func NewWithQueue(queue Queue) (*Client, error) {
 }
 
 func (c *Client) Close() error {
-	if c == nil || c.queue == nil {
+	if c == nil {
 		return nil
 	}
-	return c.queue.Close()
+
+	c.closeOnce.Do(func() {
+		if c.queue != nil {
+			c.closeErr = c.queue.Close()
+		}
+	})
+	return c.closeErr
 }
 
 func (c *Client) Subscriptions() []*Subscription {

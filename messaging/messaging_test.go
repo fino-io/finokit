@@ -18,6 +18,7 @@ type stubQueue struct {
 	publishErr    error
 	subscribeErr  error
 	closeErr      error
+	closeCalls    int
 	subscriptions []*Subscription
 	handlers      []Handler
 }
@@ -35,7 +36,10 @@ func (s *stubQueue) Subscribe(subscription *Subscription, handler Handler) error
 	return s.subscribeErr
 }
 
-func (s *stubQueue) Close() error { return s.closeErr }
+func (s *stubQueue) Close() error {
+	s.closeCalls++
+	return s.closeErr
+}
 
 func TestClientAndQueueImplementIOCloser(t *testing.T) {
 	var _ io.Closer = (*Client)(nil)
@@ -155,12 +159,20 @@ func TestClientValidation(t *testing.T) {
 
 func TestClientClose(t *testing.T) {
 	closeErr := errors.New("close err")
-	client, err := NewWithQueue(&stubQueue{closeErr: closeErr})
+	queue := &stubQueue{closeErr: closeErr}
+	client, err := NewWithQueue(queue)
 	if err != nil {
 		t.Fatalf("NewWithQueue() failed: %v", err)
 	}
 	if err := client.Close(); !errors.Is(err, closeErr) {
 		t.Fatalf("expect close error passthrough, got %v", err)
+	}
+	queue.closeErr = nil
+	if err := client.Close(); !errors.Is(err, closeErr) {
+		t.Fatalf("expect first close error to be cached, got %v", err)
+	}
+	if queue.closeCalls != 1 {
+		t.Fatalf("expect queue to close once, got %d calls", queue.closeCalls)
 	}
 
 	var nilClient *Client
