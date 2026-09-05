@@ -9,7 +9,7 @@
 - `db`：基于 GORM 的 MySQL、PostgreSQL 和 SQLite 连接管理。
 - `redis`：Redis 客户端与配置封装。
 - `messaging`：消息发布/订阅抽象，当前提供 NATS 实现。
-- `storage`：对象存储抽象，当前提供 MinIO 和 S3 实现。
+- `storage`：基于 S3-compatible API 的对象存储客户端，支持 MinIO 和 AWS S3。
 - `errorx`：业务错误码定义与 Go 代码生成工具。
 - `addr`、`idgen`、`lang/goroutine`：地址、ID 和并发相关辅助工具。
 

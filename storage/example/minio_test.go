@@ -10,13 +10,17 @@ import (
 	"testing"
 
 	"github.com/fino-io/finokit/storage"
-	"github.com/fino-io/finokit/storage/minio"
 )
 
 var ctx = context.Background()
 
-func init() {
-	storage.Register(storage.VendorMinio, minio.NewMinio)
+func newStorage(t *testing.T) storage.Storage {
+	t.Helper()
+	client, err := storage.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return client
 }
 
 func TestWrite(t *testing.T) {
@@ -43,7 +47,7 @@ func TestWrite(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := storage.Write(ctx, tt.args.object); (err != nil) != tt.wantErr {
+			if err := newStorage(t).Write(ctx, tt.args.object); (err != nil) != tt.wantErr {
 				t.Errorf("Write() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -70,7 +74,7 @@ func TestUpload(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := storage.Upload(ctx, tt.args.localFile, tt.args.key); (err != nil) != tt.wantErr {
+			if err := newStorage(t).Upload(ctx, tt.args.localFile, tt.args.key); (err != nil) != tt.wantErr {
 				t.Errorf("Upload() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -95,7 +99,7 @@ func TestPresignedUploadURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			signURL, err := storage.PresignedUploadURL(ctx, tt.args.key)
+			signURL, err := newStorage(t).PresignedUploadURL(ctx, tt.args.key)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PresignedUploadURL() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -122,7 +126,7 @@ func TestPresignedDownloadURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			signURL, err := storage.PresignedDownloadURL(ctx, tt.args.key)
+			signURL, err := newStorage(t).PresignedDownloadURL(ctx, tt.args.key)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PresignedDownloadURL() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -151,7 +155,7 @@ func TestRead(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := storage.Read(ctx, tt.args.key)
+			got, err := newStorage(t).Read(ctx, tt.args.key)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Read() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -184,7 +188,7 @@ func TestDownload(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := storage.Download(ctx, tt.args.key, tt.args.path); (err != nil) != tt.wantErr {
+			if err := newStorage(t).Download(ctx, tt.args.key, tt.args.path); (err != nil) != tt.wantErr {
 				t.Errorf("Download() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

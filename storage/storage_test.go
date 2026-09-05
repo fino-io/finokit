@@ -1,147 +1,109 @@
 package storage
 
 import (
-	"context"
-	"os"
-	"path/filepath"
-	"sync"
+	"fmt"
+	"net/url"
 	"testing"
+	"time"
 
-	"github.com/fino-io/finokit/config"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNew(t *testing.T) {
-	Register("stub", func(cfg *Config) (Storage, error) {
-		return &stubStorage{bucket: cfg.BucketName}, nil
-	})
-	Register("stub-config", func(cfg *Config) (Storage, error) {
-		return &stubStorage{bucket: cfg.BucketName}, nil
+func TestConfig(t *testing.T) {
+	t.Run("defaults max object size", func(t *testing.T) {
+		cfg := NewConfig()
+		require.Equal(t, int64(DefaultMaxObjectSize), cfg.MaxObjectSize)
 	})
 
-	t.Run("new with config", func(t *testing.T) {
-		st, err := NewWithConfig(&Config{
-			Vendor:     "stub",
-			BucketName: "fino",
-		})
+	t.Run("validates required fields", func(t *testing.T) {
+		cfg := NewConfig()
+		require.EqualError(t, cfg.Validate(), "endpoint is required")
+		cfg.Endpoint = "minio.example:9000"
+		require.EqualError(t, cfg.Validate(), "bucket name is required")
+		cfg.BucketName = "objects"
+		require.NoError(t, cfg.Validate())
+	})
+
+	t.Run("normalizes values and restores max default", func(t *testing.T) {
+		cfg, err := (&Config{
+			Endpoint:      "  minio.example:9000 ",
+			Region:        " us-east-1 ",
+			BucketName:    " objects ",
+			MaxObjectSize: 0,
+		}).normalized()
 		require.NoError(t, err)
-		require.IsType(t, &stubStorage{}, st)
+		require.Equal(t, "minio.example:9000", cfg.Endpoint)
+		require.Equal(t, "us-east-1", cfg.Region)
+		require.Equal(t, "objects", cfg.BucketName)
+		require.Equal(t, int64(DefaultMaxObjectSize), cfg.MaxObjectSize)
 	})
 
-	t.Run("rejects unknown vendor", func(t *testing.T) {
-		st, err := NewWithConfig(&Config{
-			Vendor:     "missing",
-			BucketName: "fino",
+	_, err := NewWithConfig(nil)
+	require.ErrorIs(t, err, ErrNilConfig)
+}
+
+func TestClientValidateWriteObject(t *testing.T) {
+	client := &Client{cfg: &Config{MaxObjectSize: 5}}
+
+	tests := []struct {
+		name    string
+		object  *Object
+		want    int64
+		wantErr string
+	}{
+		{name: "nil object", wantErr: "object is required"},
+		{name: "missing key", object: &Object{Content: []byte("hello")}, wantErr: "object key is required"},
+		{name: "infer size", object: &Object{Key: "hello.txt", Content: []byte("hello")}, want: 5},
+		{name: "mismatched size", object: &Object{Key: "hello.txt", Size: 4, Content: []byte("hello")}, wantErr: "does not match"},
+		{name: "negative size", object: &Object{Key: "hello.txt", Size: -1}, wantErr: "greater than or equal to 0"},
+		{name: "too large", object: &Object{Key: "hello.txt", Content: []byte("toolong")}, wantErr: "exceeds max object size"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := client.validateWriteObject(test.object)
+			if test.wantErr == "" {
+				require.NoError(t, err)
+				require.Equal(t, test.want, got)
+				return
+			}
+			require.ErrorContains(t, err, test.wantErr)
 		})
-		require.ErrorIs(t, err, ErrUnsupportedVendor)
-		require.Nil(t, st)
+	}
+}
+
+func TestClientPresignOptions(t *testing.T) {
+	minioClient, err := minio.New("storage.example:9000", &minio.Options{
+		Creds:        credentials.NewStaticV4("access", "secret", ""),
+		Region:       "us-east-1",
+		BucketLookup: minio.BucketLookupPath,
 	})
-
-	t.Run("loads config", func(t *testing.T) {
-		loadTestConfig(t, "storage.yaml", "storage:\n  vendor: stub-config\n  bucketName: fino\n")
-
-		st, err := New()
-		require.NoError(t, err)
-		require.IsType(t, &stubStorage{}, st)
-	})
-}
-
-type stubStorage struct {
-	bucket        string
-	listResult    ListResult
-	listPrefix    string
-	listOptions   []Option
-	removedKeys   []string
-	removeOptions []Option
-}
-
-func (s *stubStorage) Read(context.Context, string, ...Option) (*Object, error) {
-	return nil, nil
-}
-
-func (s *stubStorage) Write(context.Context, *Object, ...Option) error {
-	return nil
-}
-
-func (s *stubStorage) Download(context.Context, string, string, ...Option) error {
-	return nil
-}
-
-func (s *stubStorage) Upload(context.Context, string, string, ...Option) error {
-	return nil
-}
-
-func (s *stubStorage) PresignedDownloadURL(context.Context, string, ...Option) (string, error) {
-	return "", nil
-}
-
-func (s *stubStorage) PresignedUploadURL(context.Context, string, ...Option) (string, error) {
-	return "", nil
-}
-
-func (s *stubStorage) List(_ context.Context, prefix string, opts ...Option) (ListResult, error) {
-	s.listPrefix = prefix
-	s.listOptions = append([]Option(nil), opts...)
-	return s.listResult, nil
-}
-
-func (s *stubStorage) Remove(_ context.Context, keys []string, opts ...Option) error {
-	s.removedKeys = append([]string(nil), keys...)
-	s.removeOptions = append([]Option(nil), opts...)
-	return nil
-}
-
-func TestList(t *testing.T) {
-	stub := &stubStorage{listResult: ListResult{NextPageToken: "next-page"}}
-	useStorageForTest(t, stub)
-
-	result, err := List(context.Background(), "assets/", WithPageToken("current-page"))
-
 	require.NoError(t, err)
-	require.Equal(t, stub.listResult, result)
-	require.Equal(t, "assets/", stub.listPrefix)
-	require.Equal(t, "current-page", ApplyOptions(stub.listOptions...).PageToken)
-}
+	client := &Client{client: minioClient, cfg: &Config{BucketName: "default"}}
 
-func TestRemove(t *testing.T) {
-	stub := &stubStorage{}
-	useStorageForTest(t, stub)
-
-	err := Remove(context.Background(), []string{"assets/logo.svg", "assets/icon.svg"}, WithPageToken("ignored-by-provider"))
-
+	got, err := client.PresignedDownloadURL(t.Context(), "hello.txt", WithBucket("override"), WithSignTTL(time.Hour))
 	require.NoError(t, err)
-	require.Equal(t, []string{"assets/logo.svg", "assets/icon.svg"}, stub.removedKeys)
-	require.Equal(t, "ignored-by-provider", ApplyOptions(stub.removeOptions...).PageToken)
+	parsed, err := url.Parse(got)
+	require.NoError(t, err)
+	require.Equal(t, "/override/hello.txt", parsed.Path)
+	require.Equal(t, "3600", parsed.Query().Get("X-Amz-Expires"))
 }
 
-func useStorageForTest(t *testing.T, stub Storage) {
-	t.Helper()
-
-	storage = stub
-	storageOnce = sync.Once{}
-	storageOnce.Do(func() {})
-	t.Cleanup(func() {
-		storage = nil
-		storageOnce = sync.Once{}
-	})
-}
-
-func loadTestConfig(t *testing.T, filename, body string) {
-	t.Helper()
-
-	if err := config.InitDefault(config.WithWatcherDisabled()); err != nil {
-		t.Fatalf("InitDefault() failed: %v", err)
+func TestCollectListPageStopsAtLimit(t *testing.T) {
+	objects := make(chan minio.ObjectInfo, listPageSize+1)
+	for i := 0; i < listPageSize+1; i++ {
+		objects <- minio.ObjectInfo{Key: fmt.Sprintf("object-%04d", i)}
 	}
+	close(objects)
 
-	dir := t.TempDir()
-	path := filepath.Join(dir, "config", filename)
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatalf("MkdirAll() failed: %v", err)
-	}
-	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
-		t.Fatalf("WriteFile() failed: %v", err)
-	}
-	if err := config.LoadPath(filepath.Join(dir, "config")); err != nil {
-		t.Fatalf("LoadPath() failed: %v", err)
-	}
+	canceled := false
+	result, err := collectListPage(objects, func() { canceled = true })
+	require.NoError(t, err)
+	require.Len(t, result.Objects, listPageSize)
+	require.Equal(t, "object-0999", result.NextPageToken)
+	require.True(t, canceled)
+	_, open := <-objects
+	require.False(t, open, "collectListPage must drain the source channel")
 }

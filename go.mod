@@ -1,11 +1,10 @@
 module github.com/fino-io/finokit
 
-go 1.25.12
+go 1.25.13
 
 require (
 	dario.cat/mergo v1.0.1
 	github.com/alicebob/miniredis/v2 v2.38.0
-	github.com/aws/aws-sdk-go v1.55.8
 	github.com/bitly/go-simplejson v0.5.1
 	github.com/fatih/structs v1.1.0
 	github.com/fino-io/core/go v0.0.0-20260901015255-1d46040b458f
@@ -17,7 +16,6 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/minio/minio-go/v7 v7.0.95
 	github.com/nats-io/nats.go v1.39.1
-	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/samber/lo v1.52.0
 	github.com/stretchr/testify v1.11.1
@@ -48,7 +46,6 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.18.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.11 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect

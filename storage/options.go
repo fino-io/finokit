@@ -2,6 +2,11 @@ package storage
 
 import "time"
 
+const (
+	DefaultConcurrency = 3
+	DefaultSignTTL     = 24 * time.Hour
+)
+
 type RequestOptions struct {
 	Bucket      string
 	Concurrency int

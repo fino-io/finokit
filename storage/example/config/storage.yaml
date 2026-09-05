@@ -1,7 +1,6 @@
 storage:
-  vendor: minio
   endpoint: 192.168.4.188:9000
   secure: false
-  AccessKey: minioadmin
-  SecretKey: minioadmin
+  accessKey: minioadmin
+  secretKey: minioadmin
   bucketName: minio1
