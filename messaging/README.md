@@ -77,7 +77,7 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
-    defer client.Shutdown()
+    defer client.Close()
 }
 ```
 
@@ -142,7 +142,7 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
-    defer client.Shutdown()
+    defer client.Close()
 }
 ```
 

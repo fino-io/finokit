@@ -3,6 +3,7 @@ package messaging
 import (
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,6 +17,7 @@ import (
 type stubQueue struct {
 	publishErr    error
 	subscribeErr  error
+	closeErr      error
 	subscriptions []*Subscription
 	handlers      []Handler
 }
@@ -33,7 +35,12 @@ func (s *stubQueue) Subscribe(subscription *Subscription, handler Handler) error
 	return s.subscribeErr
 }
 
-func (s *stubQueue) Shutdown() {}
+func (s *stubQueue) Close() error { return s.closeErr }
+
+func TestClientAndQueueImplementIOCloser(t *testing.T) {
+	var _ io.Closer = (*Client)(nil)
+	var _ io.Closer = (Queue)(nil)
+}
 
 func TestNew(t *testing.T) {
 	t.Run("new client with injected queue", func(t *testing.T) {
@@ -143,6 +150,22 @@ func TestClientValidation(t *testing.T) {
 	client.queue = &stubQueue{subscribeErr: subscribeErr}
 	if err := client.Subscribe(&Subscription{Topic: "topic"}, func(context.Context, *Subscription, *SubMessage) error { return nil }); !errors.Is(err, subscribeErr) {
 		t.Fatalf("expect subscribe error passthrough, got %v", err)
+	}
+}
+
+func TestClientClose(t *testing.T) {
+	closeErr := errors.New("close err")
+	client, err := NewWithQueue(&stubQueue{closeErr: closeErr})
+	if err != nil {
+		t.Fatalf("NewWithQueue() failed: %v", err)
+	}
+	if err := client.Close(); !errors.Is(err, closeErr) {
+		t.Fatalf("expect close error passthrough, got %v", err)
+	}
+
+	var nilClient *Client
+	if err := nilClient.Close(); err != nil {
+		t.Fatalf("expect nil client close to succeed, got %v", err)
 	}
 }
 

@@ -29,7 +29,7 @@ func TestConfiguredSubscriptionRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create client: %v", err)
 	}
-	defer client.Shutdown()
+	defer client.Close()
 
 	subscriptions := client.Subscriptions()
 	if len(subscriptions) != 1 || subscriptions[0].Endpoint.Method != "start_task" {
@@ -87,7 +87,7 @@ func TestConfiguredJetStreamCreatesStreamAndRoundTrips(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create client: %v", err)
 	}
-	defer client.Shutdown()
+	defer client.Close()
 
 	t.Cleanup(func() {
 		nc, connectErr := gonats.Connect(config.URL)
@@ -105,7 +105,7 @@ func TestConfiguredJetStreamCreatesStreamAndRoundTrips(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create second client with existing stream: %v", err)
 	}
-	second.Shutdown()
+	second.Close()
 
 	received := make(chan *SubMessage, 1)
 	if err := client.Subscribe(config.Subscriptions[0], func(_ context.Context, _ *Subscription, message *SubMessage) error {

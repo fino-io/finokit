@@ -18,11 +18,11 @@ func NewWithQueue(queue Queue) (*Client, error) {
 	return &Client{queue: queue}, nil
 }
 
-func (c *Client) Shutdown() {
+func (c *Client) Close() error {
 	if c == nil || c.queue == nil {
-		return
+		return nil
 	}
-	c.queue.Shutdown()
+	return c.queue.Close()
 }
 
 func (c *Client) Subscriptions() []*Subscription {

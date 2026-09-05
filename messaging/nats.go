@@ -28,8 +28,9 @@ type natsQueue struct {
 	conn          *nats.Conn
 	js            nats.JetStreamContext
 	subscriptions []*nats.Subscription
-	shutdownCh    chan struct{}
-	shutdownOnce  sync.Once
+	closeCh       chan struct{}
+	closeOnce     sync.Once
+	closeErr      error
 	subMu         sync.Mutex
 }
 
@@ -51,8 +52,8 @@ func newNATSQueue(cfg *Config) (*natsQueue, error) {
 	}
 
 	n := &natsQueue{
-		conn:       nc,
-		shutdownCh: make(chan struct{}),
+		conn:    nc,
+		closeCh: make(chan struct{}),
 	}
 
 	if normalized.JetStream {
@@ -331,7 +332,7 @@ func (n *natsQueue) pullSubscribe(s *Subscription, cb nats.MsgHandler) (*nats.Su
 	go func() {
 		for {
 			select {
-			case <-n.shutdownCh:
+			case <-n.closeCh:
 				return
 			default:
 			}
@@ -386,21 +387,22 @@ func setPendingLimit(sub configurableSubscription, s *Subscription) error {
 	return nil
 }
 
-func (n *natsQueue) Shutdown() {
+func (n *natsQueue) Close() error {
 	if n == nil {
-		return
+		return nil
 	}
 
-	n.shutdownOnce.Do(func() {
-		if n.shutdownCh != nil {
-			close(n.shutdownCh)
+	n.closeOnce.Do(func() {
+		if n.closeCh != nil {
+			close(n.closeCh)
 		}
 
+		var errs []error
 		n.subMu.Lock()
 		for _, sub := range n.subscriptions {
 			if sub != nil {
 				if err := sub.Unsubscribe(); err != nil {
-					logs.Warnw("failed to unsubscribe", "subject", sub.Subject, "error", err)
+					errs = append(errs, fmt.Errorf("unsubscribe subject %q: %w", sub.Subject, err))
 				}
 			}
 		}
@@ -410,5 +412,8 @@ func (n *natsQueue) Shutdown() {
 		if n.conn != nil {
 			n.conn.Close()
 		}
+		n.closeErr = errors.Join(errs...)
 	})
+
+	return n.closeErr
 }
