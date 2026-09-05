@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"sync"
 	"time"
 
 	goredis "github.com/redis/go-redis/v9"
@@ -26,6 +27,9 @@ type Generator struct {
 	serverIDs []int64
 	namespace string
 	provider  io.Closer
+
+	closeOnce sync.Once
+	closeErr  error
 }
 
 func NewWithClient(client goredis.UniversalClient, serverIDs []int64) (*Generator, error) {
@@ -43,10 +47,16 @@ func NewWithClient(client goredis.UniversalClient, serverIDs []int64) (*Generato
 }
 
 func (g *Generator) Close() error {
-	if g == nil || g.provider == nil {
+	if g == nil {
 		return nil
 	}
-	return g.provider.Close()
+
+	g.closeOnce.Do(func() {
+		if g.provider != nil {
+			g.closeErr = g.provider.Close()
+		}
+	})
+	return g.closeErr
 }
 
 func (g *Generator) GenID(ctx context.Context) (int64, error) {

@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -34,8 +35,10 @@ func newTestClient(t *testing.T) (*goredis.Client, func(), error) {
 }
 
 type trackingProvider struct {
-	raw    goredis.UniversalClient
-	closed bool
+	raw        goredis.UniversalClient
+	closed     bool
+	closeErr   error
+	closeCalls int
 }
 
 func (p *trackingProvider) Raw() goredis.UniversalClient {
@@ -48,7 +51,8 @@ func (p *trackingProvider) Ping(ctx context.Context) error {
 
 func (p *trackingProvider) Close() error {
 	p.closed = true
-	return nil
+	p.closeCalls++
+	return p.closeErr
 }
 
 func TestNew(t *testing.T) {
@@ -144,13 +148,17 @@ func TestNewWithProviderOwnsProvider(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(cleanup)
 
-	provider := &trackingProvider{raw: cli}
+	closeErr := errors.New("close err")
+	provider := &trackingProvider{raw: cli, closeErr: closeErr}
 	gen, err := NewWithProvider(&Config{ServerIDs: []int64{1}}, provider)
 	require.NoError(t, err)
 	require.False(t, provider.closed)
 
-	require.NoError(t, gen.Close())
+	require.ErrorIs(t, gen.Close(), closeErr)
+	provider.closeErr = nil
+	require.ErrorIs(t, gen.Close(), closeErr)
 	assert.True(t, provider.closed)
+	assert.Equal(t, 1, provider.closeCalls)
 }
 
 func loadTestConfig(t *testing.T, filename, body string) {
