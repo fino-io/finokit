@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"io"
 	"math/big"
 	"time"
 
@@ -24,7 +25,7 @@ type Generator struct {
 	client    goredis.UniversalClient
 	serverIDs []int64
 	namespace string
-	closeFn   func() error
+	provider  io.Closer
 }
 
 func NewWithClient(client goredis.UniversalClient, serverIDs []int64) (*Generator, error) {
@@ -42,10 +43,10 @@ func NewWithClient(client goredis.UniversalClient, serverIDs []int64) (*Generato
 }
 
 func (g *Generator) Close() error {
-	if g == nil || g.closeFn == nil {
+	if g == nil || g.provider == nil {
 		return nil
 	}
-	return g.closeFn()
+	return g.provider.Close()
 }
 
 func (g *Generator) GenID(ctx context.Context) (int64, error) {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/fino-io/finokit/config"
+	finoredis "github.com/fino-io/finokit/redis"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,6 +33,24 @@ func newTestClient(t *testing.T) (*goredis.Client, func(), error) {
 	return cli, cleanup, nil
 }
 
+type trackingProvider struct {
+	raw    goredis.UniversalClient
+	closed bool
+}
+
+func (p *trackingProvider) Raw() goredis.UniversalClient {
+	return p.raw
+}
+
+func (p *trackingProvider) Ping(ctx context.Context) error {
+	return p.raw.Ping(ctx).Err()
+}
+
+func (p *trackingProvider) Close() error {
+	p.closed = true
+	return nil
+}
+
 func TestNew(t *testing.T) {
 	t.Run("validates client", func(t *testing.T) {
 		gen, err := NewWithClient(nil, []int64{1})
@@ -47,14 +66,14 @@ func TestNew(t *testing.T) {
 		require.Nil(t, gen)
 	})
 
-	t.Run("new with config", func(t *testing.T) {
+	t.Run("new with provider", func(t *testing.T) {
 		cli, cleanup, err := newTestClient(t)
 		require.NoError(t, err)
 		t.Cleanup(cleanup)
 
-		loadTestConfig(t, "redis.yaml", fmt.Sprintf("redis:\n  addresses:\n    - %s\n", cli.Options().Addr))
-
-		gen, err := NewWithConfig(&Config{ServerIDs: []int64{1}})
+		provider, err := finoredis.Wrap(cli)
+		require.NoError(t, err)
+		gen, err := NewWithProvider(&Config{ServerIDs: []int64{1}}, provider)
 		require.NoError(t, err)
 		t.Cleanup(func() {
 			require.NoError(t, gen.Close())
@@ -118,6 +137,20 @@ func TestNewWithClientValidateArgs(t *testing.T) {
 	idgen, err = NewWithClient(cli, nil)
 	require.ErrorIs(t, err, ErrEmptyServerIDs)
 	assert.Nil(t, idgen)
+}
+
+func TestNewWithProviderOwnsProvider(t *testing.T) {
+	cli, cleanup, err := newTestClient(t)
+	require.NoError(t, err)
+	t.Cleanup(cleanup)
+
+	provider := &trackingProvider{raw: cli}
+	gen, err := NewWithProvider(&Config{ServerIDs: []int64{1}}, provider)
+	require.NoError(t, err)
+	require.False(t, provider.closed)
+
+	require.NoError(t, gen.Close())
+	assert.True(t, provider.closed)
 }
 
 func loadTestConfig(t *testing.T, filename, body string) {

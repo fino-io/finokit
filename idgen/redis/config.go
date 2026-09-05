@@ -25,29 +25,16 @@ func New() (*Generator, error) {
 	if err := config.ScanFrom(cfg, defaultConfigKey); err != nil {
 		return nil, err
 	}
-	return NewWithConfig(cfg)
-}
-
-func NewWithConfig(cfg *Config) (*Generator, error) {
-	normalized, err := cfg.normalized()
-	if err != nil {
-		return nil, err
-	}
 
 	provider, err := finoredis.New()
 	if err != nil {
 		return nil, err
 	}
 
-	g, err := NewWithClient(provider.Raw(), normalized.ServerIDs)
+	g, err := NewWithProvider(cfg, provider)
 	if err != nil {
 		_ = provider.Close()
 		return nil, err
-	}
-
-	g.namespace = normalized.Namespace
-	g.closeFn = func() error {
-		return provider.Close()
 	}
 	return g, nil
 }
@@ -74,6 +61,7 @@ func NewWithProvider(cfg *Config, provider finoredis.Provider) (*Generator, erro
 	}
 
 	g.namespace = normalized.Namespace
+	g.provider = provider
 	return g, nil
 }
 
