@@ -99,9 +99,29 @@ func TestNew(t *testing.T) {
 			require.NoError(t, cli.Close())
 		})
 	})
+
+	t.Run("uses default config when section is absent", func(t *testing.T) {
+		require.NoError(t, config.InitDefault(config.WithWatcherDisabled()))
+
+		cli, err := New()
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, cli.Close())
+		})
+
+		raw, ok := cli.Raw().(*goredis.Client)
+		require.True(t, ok)
+		require.Equal(t, ":6379", raw.Options().Addr)
+	})
 }
 
 func TestService(t *testing.T) {
+	t.Run("default config", func(t *testing.T) {
+		cfg := NewDefaultConfig()
+		require.Equal(t, []string{":6379"}, cfg.Addresses)
+		require.Equal(t, 3, cfg.MaxRetries)
+	})
+
 	t.Run("wrap rejects nil", func(t *testing.T) {
 		cli, err := Wrap(nil)
 		require.ErrorIs(t, err, ErrNilRawClient)
@@ -118,6 +138,8 @@ func TestService(t *testing.T) {
 		})
 
 		require.NoError(t, cli.Ping(context.Background()))
+		require.NoError(t, cli.Close())
+		require.NoError(t, cli.Close())
 	})
 
 	t.Run("nil safety", func(t *testing.T) {

@@ -79,6 +79,9 @@ func TestProviderClose(t *testing.T) {
 	if err := provider.Close(); err != nil {
 		t.Fatalf("Close() error = %v", err)
 	}
+	if err := provider.Close(); err != nil {
+		t.Fatalf("second Close() error = %v", err)
+	}
 }
 
 func TestProviderNilDB(t *testing.T) {

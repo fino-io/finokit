@@ -2,10 +2,13 @@ package redis
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/fino-io/finokit/config"
 	goredis "github.com/redis/go-redis/v9"
 )
+
+const defaultConfigKey = "redis"
 
 var (
 	ErrNilRawClient = errors.New("redis raw client is nil")
@@ -14,12 +17,13 @@ var (
 
 type Service struct {
 	raw goredis.UniversalClient
+
+	closeOnce sync.Once
+	closeErr  error
 }
 
-const defaultConfigKey = "redis"
-
 func New() (*Service, error) {
-	cfg := &Config{}
+	cfg := NewDefaultConfig()
 	if err := config.ScanFrom(cfg, defaultConfigKey); err != nil {
 		return nil, err
 	}

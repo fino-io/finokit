@@ -7,14 +7,14 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 )
 
+var _ Provider = (*Service)(nil)
+
 type Provider interface {
 	Raw() goredis.UniversalClient
 	Ping(ctx context.Context) error
 
 	io.Closer
 }
-
-var _ Provider = (*Service)(nil)
 
 func (s *Service) Raw() goredis.UniversalClient {
 	if s == nil {
@@ -34,5 +34,9 @@ func (s *Service) Close() error {
 	if s == nil || s.raw == nil {
 		return nil
 	}
-	return s.raw.Close()
+
+	s.closeOnce.Do(func() {
+		s.closeErr = s.raw.Close()
+	})
+	return s.closeErr
 }

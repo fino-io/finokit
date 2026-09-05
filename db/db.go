@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/fino-io/finokit/config"
 
@@ -11,15 +12,18 @@ import (
 	"gorm.io/gorm"
 )
 
+const defaultConfigKey = "db"
+
 type DB struct {
 	*gorm.DB
 	Config *Config
+
+	closeOnce sync.Once
+	closeErr  error
 }
 
-const defaultConfigKey = "db"
-
 func New() (*DB, error) {
-	cfg := &Config{}
+	cfg := NewDefaultConfig()
 	if err := config.ScanFrom(cfg, defaultConfigKey); err != nil {
 		return nil, err
 	}

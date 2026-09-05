@@ -10,16 +10,16 @@ import (
 	"gorm.io/plugin/dbresolver"
 )
 
+var _ Provider = (*DB)(nil)
+
+var ErrNilSessionDB = errors.New("db session gorm db is nil")
+
 type Provider interface {
 	NewSession(ctx context.Context, opts ...Option) *gorm.DB
 	Transaction(ctx context.Context, fn func(tx *gorm.DB) error, opts ...Option) error
 
 	io.Closer
 }
-
-var _ Provider = (*DB)(nil)
-
-var ErrNilSessionDB = errors.New("db session gorm db is nil")
 
 type Option func(*option)
 
@@ -72,11 +72,15 @@ func (d *DB) Close() error {
 		return nil
 	}
 
-	sqlDB, err := d.DB.DB()
-	if err != nil {
-		return err
-	}
-	return sqlDB.Close()
+	d.closeOnce.Do(func() {
+		sqlDB, err := d.DB.DB()
+		if err != nil {
+			d.closeErr = err
+			return
+		}
+		d.closeErr = sqlDB.Close()
+	})
+	return d.closeErr
 }
 
 func applyOptions(opts ...Option) *option {

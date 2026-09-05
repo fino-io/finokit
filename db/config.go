@@ -10,18 +10,6 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-type Config struct {
-	*gorm.Config
-	Driver             string        `json:"driver"`
-	DSN                string        `json:"dsn"`
-	MaxOpenConns       int           `json:"maxOpenConns" default:"12"`
-	MaxIdleConns       int           `json:"maxIdleConns" default:"12"`
-	ConnMaxLifetime    time.Duration `json:"connMaxLifetime"`
-	ConnMaxIdleTime    time.Duration `json:"connMaxIdleTime"`
-	Debug              bool          `json:"debug"`
-	DisableAutoMigrate bool          `json:"disableAutoMigrate"`
-}
-
 const (
 	MysqlDriver    = "mysql"
 	SqliteDriver   = "sqlite"
@@ -39,6 +27,25 @@ var (
 	ErrDSNRequired       = errors.New("db dsn is required")
 	ErrUnsupportedDriver = errors.New("db driver is unsupported")
 )
+
+type Config struct {
+	*gorm.Config
+	Driver             string        `json:"driver"`
+	DSN                string        `json:"dsn"`
+	MaxOpenConns       int           `json:"maxOpenConns" default:"12"`
+	MaxIdleConns       int           `json:"maxIdleConns" default:"12"`
+	ConnMaxLifetime    time.Duration `json:"connMaxLifetime"`
+	ConnMaxIdleTime    time.Duration `json:"connMaxIdleTime"`
+	Debug              bool          `json:"debug"`
+	DisableAutoMigrate bool          `json:"disableAutoMigrate"`
+}
+
+func NewDefaultConfig() *Config {
+	return &Config{
+		MaxOpenConns: DefaultMaxOpenConns,
+		MaxIdleConns: DefaultMaxIdleConns,
+	}
+}
 
 func ParseDriver(raw string) (string, error) {
 	driver := strings.ToLower(strings.TrimSpace(raw))

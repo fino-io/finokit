@@ -45,8 +45,8 @@ type Config struct {
 	TLSConfig *tls.Config `json:"tlsConfig"`
 }
 
-func DefaultConfig() Config {
-	return Config{
+func NewDefaultConfig() *Config {
+	return &Config{
 		Addresses:       []string{":6379"},
 		MaxRetries:      3,
 		MinRetryBackoff: 8 * time.Millisecond,
