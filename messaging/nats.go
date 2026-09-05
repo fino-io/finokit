@@ -1,4 +1,4 @@
-package nats
+package messaging
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 	"github.com/nats-io/nats.go"
 
 	"github.com/fino-io/finokit/logs"
-	"github.com/fino-io/finokit/messaging"
 )
 
 const defaultFetchWait = time.Second
@@ -25,7 +24,7 @@ var (
 	ErrEmptyStreamSubjects = errors.New("messaging nats: stream subjects are empty")
 )
 
-type Nats struct {
+type natsQueue struct {
 	conn          *nats.Conn
 	js            nats.JetStreamContext
 	subscriptions []*nats.Subscription
@@ -39,11 +38,7 @@ type configurableSubscription interface {
 	Unsubscribe() error
 }
 
-func Register() {
-	messaging.Register(messaging.DriverNATS, NewQueue)
-}
-
-func NewWithConfig(cfg *messaging.NatsConfig) (*Nats, error) {
+func newNATSQueue(cfg *Config) (*natsQueue, error) {
 	normalized, err := normalizeConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -55,7 +50,7 @@ func NewWithConfig(cfg *messaging.NatsConfig) (*Nats, error) {
 		return nil, err
 	}
 
-	n := &Nats{
+	n := &natsQueue{
 		conn:       nc,
 		shutdownCh: make(chan struct{}),
 	}
@@ -76,7 +71,7 @@ func NewWithConfig(cfg *messaging.NatsConfig) (*Nats, error) {
 	return n, nil
 }
 
-func ensureStreams(js nats.JetStreamContext, streams []*messaging.NatsStream) error {
+func ensureStreams(js nats.JetStreamContext, streams []*Stream) error {
 	for _, stream := range streams {
 		if stream == nil {
 			return ErrNilStream
@@ -127,29 +122,7 @@ func ensureStream(js nats.JetStreamContext, name string, subjects []string) erro
 	return err
 }
 
-func NewQueue(cfg *messaging.Config) (messaging.Queue, error) {
-	if cfg == nil {
-		return nil, messaging.ErrNilConfig
-	}
-
-	return NewWithConfig(&cfg.Nats)
-}
-
-func normalizeConfig(cfg *messaging.NatsConfig) (*messaging.NatsConfig, error) {
-	if cfg == nil {
-		return nil, messaging.ErrNilConfig
-	}
-
-	normalized := *cfg
-	normalized.URL = strings.TrimSpace(normalized.URL)
-	if normalized.URL == "" {
-		return nil, ErrEmptyURL
-	}
-
-	return &normalized, nil
-}
-
-func (n *Nats) Publish(ctx context.Context, topic string, messages ...*messaging.Message) error {
+func (n *natsQueue) Publish(ctx context.Context, topic string, messages ...*Message) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -159,7 +132,7 @@ func (n *Nats) Publish(ctx context.Context, topic string, messages ...*messaging
 
 	for _, message := range messages {
 		if message == nil {
-			return messaging.ErrNilMessage
+			return ErrNilMessage
 		}
 		publishCtx, span := startProducer(ctx, topic)
 		bytes, err := jsoniter.Marshal(message)
@@ -179,7 +152,7 @@ func (n *Nats) Publish(ctx context.Context, topic string, messages ...*messaging
 	return nil
 }
 
-func (n *Nats) publish(ctx context.Context, topic string, payload []byte, messageID string) error {
+func (n *natsQueue) publish(ctx context.Context, topic string, payload []byte, messageID string) error {
 	message := &nats.Msg{Subject: topic, Data: payload, Header: nats.Header{}}
 	injectContext(ctx, message.Header)
 	if n.js == nil {
@@ -197,9 +170,9 @@ func (n *Nats) publish(ctx context.Context, topic string, payload []byte, messag
 	return err
 }
 
-func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) error {
+func (n *natsQueue) Subscribe(s *Subscription, h Handler) error {
 	if h == nil {
-		return messaging.ErrNilHandler
+		return ErrNilHandler
 	}
 	if err := s.Validate(); err != nil {
 		return err
@@ -210,7 +183,7 @@ func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) error {
 		ctx, span := startConsumer(ctx, s.Topic)
 		defer span.End()
 
-		msg := &messaging.SubMessage{}
+		msg := &SubMessage{}
 		if err := jsoniter.Unmarshal(raw.Data, msg); err != nil {
 			recordSpanError(span, err)
 			logs.Warnw("Nats: failed to unmarshal data form topic", "topic", s.Topic, "error", err)
@@ -245,8 +218,8 @@ func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) error {
 			})
 		}
 
-		ctx = messaging.WithTopic(ctx, s.Topic)
-		ctx = messaging.WithMessage(ctx, msg)
+		ctx = WithTopic(ctx, s.Topic)
+		ctx = WithMessage(ctx, msg)
 		err := h(ctx, s, msg)
 		if err != nil {
 			recordSpanError(span, err)
@@ -271,7 +244,7 @@ func (n *Nats) Subscribe(s *messaging.Subscription, h messaging.Handler) error {
 	return nil
 }
 
-func completeMessage(message *messaging.SubMessage, handlerErr error, acknowledge bool) {
+func completeMessage(message *SubMessage, handlerErr error, acknowledge bool) {
 	if message == nil || message.Done() || !acknowledge {
 		return
 	}
@@ -282,7 +255,7 @@ func completeMessage(message *messaging.SubMessage, handlerErr error, acknowledg
 	message.Ack()
 }
 
-func (n *Nats) addSubscription(sub *nats.Subscription) {
+func (n *natsQueue) addSubscription(sub *nats.Subscription) {
 	if n == nil || sub == nil {
 		return
 	}
@@ -291,7 +264,7 @@ func (n *Nats) addSubscription(sub *nats.Subscription) {
 	n.subMu.Unlock()
 }
 
-func (n *Nats) queueSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (*nats.Subscription, error) {
+func (n *natsQueue) queueSubscribe(s *Subscription, cb nats.MsgHandler) (*nats.Subscription, error) {
 	var (
 		sub *nats.Subscription
 		err error
@@ -315,7 +288,7 @@ func (n *Nats) queueSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (*n
 	return sub, nil
 }
 
-func (n *Nats) subscribe(s *messaging.Subscription, cb nats.MsgHandler) (*nats.Subscription, error) {
+func (n *natsQueue) subscribe(s *Subscription, cb nats.MsgHandler) (*nats.Subscription, error) {
 	var (
 		sub *nats.Subscription
 		err error
@@ -335,7 +308,7 @@ func (n *Nats) subscribe(s *messaging.Subscription, cb nats.MsgHandler) (*nats.S
 	return sub, nil
 }
 
-func (n *Nats) pullSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (*nats.Subscription, error) {
+func (n *natsQueue) pullSubscribe(s *Subscription, cb nats.MsgHandler) (*nats.Subscription, error) {
 	durableName := strings.Join([]string{s.Group, s.Name}, "-")
 	if durableName == "-" || durableName == "" {
 		durableName = strings.ReplaceAll(s.Topic, ".", "-")
@@ -384,7 +357,7 @@ func (n *Nats) pullSubscribe(s *messaging.Subscription, cb nats.MsgHandler) (*na
 	return sub, nil
 }
 
-func configureSubscription(sub configurableSubscription, s *messaging.Subscription) error {
+func configureSubscription(sub configurableSubscription, s *Subscription) error {
 	if sub == nil {
 		return nil
 	}
@@ -394,7 +367,7 @@ func configureSubscription(sub configurableSubscription, s *messaging.Subscripti
 	return nil
 }
 
-func setPendingLimit(sub configurableSubscription, s *messaging.Subscription) error {
+func setPendingLimit(sub configurableSubscription, s *Subscription) error {
 	msgLimit := s.PendingMsgLimit
 	bytesLimit := s.PendingBytesLimit
 	if msgLimit != 0 || bytesLimit != 0 {
@@ -413,7 +386,7 @@ func setPendingLimit(sub configurableSubscription, s *messaging.Subscription) er
 	return nil
 }
 
-func (n *Nats) Shutdown() {
+func (n *natsQueue) Shutdown() {
 	if n == nil {
 		return
 	}

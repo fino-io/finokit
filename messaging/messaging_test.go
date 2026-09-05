@@ -36,38 +36,21 @@ func (s *stubQueue) Subscribe(subscription *Subscription, handler Handler) error
 func (s *stubQueue) Shutdown() {}
 
 func TestNew(t *testing.T) {
-	driver := "stub-client"
-	defaultDriver := "stub-default"
-	var loadedConfig *Config
-	Register(driver, func(cfg *Config) (Queue, error) {
-		_ = cfg
-		return &stubQueue{}, nil
-	})
-	Register(defaultDriver, func(cfg *Config) (Queue, error) {
-		loadedConfig = cfg
-		return &stubQueue{}, nil
-	})
+	t.Run("new client with injected queue", func(t *testing.T) {
+		if _, err := NewWithQueue(nil); !errors.Is(err, ErrNilQueue) {
+			t.Fatalf("expect ErrNilQueue, got %v", err)
+		}
 
-	t.Run("new client", func(t *testing.T) {
-		t.Run("nil queue", func(t *testing.T) {
-			_, err := NewWithQueue(nil)
-			if !errors.Is(err, ErrNilQueue) {
-				t.Fatalf("expect ErrNilQueue, got %v", err)
-			}
-		})
-
-		t.Run("init", func(t *testing.T) {
-			client, err := NewWithQueue(&stubQueue{})
-			if err != nil {
-				t.Fatalf("new client failed: %v", err)
-			}
-			if client.queue == nil {
-				t.Fatal("expect non-nil queue")
-			}
-		})
+		client, err := NewWithQueue(&stubQueue{})
+		if err != nil {
+			t.Fatalf("new client failed: %v", err)
+		}
+		if client.queue == nil {
+			t.Fatal("expect non-nil queue")
+		}
 	})
 
-	t.Run("new with config", func(t *testing.T) {
+	t.Run("new with config validates before connecting", func(t *testing.T) {
 		client, err := NewWithConfig(nil)
 		if !errors.Is(err, ErrNilConfig) {
 			t.Fatalf("expect ErrNilConfig, got %v", err)
@@ -75,44 +58,24 @@ func TestNew(t *testing.T) {
 		if client != nil {
 			t.Fatalf("expect nil client, got %#v", client)
 		}
-	})
 
-	t.Run("unsupported driver", func(t *testing.T) {
-		client, err := NewWithConfig(&Config{Driver: "missing"})
-		if !errors.Is(err, ErrUnsupportedDriver) {
-			t.Fatalf("expect ErrUnsupportedDriver, got %v", err)
+		client, err = NewWithConfig(&Config{})
+		if !errors.Is(err, ErrEmptyURL) {
+			t.Fatalf("expect ErrEmptyURL, got %v", err)
 		}
 		if client != nil {
 			t.Fatalf("expect nil client, got %#v", client)
 		}
 	})
 
-	t.Run("new with config init", func(t *testing.T) {
-		subscriptions := []*Subscription{{
-			Name:     "agent-start-task",
-			Topic:    "demo.start-task",
-			Endpoint: Endpoint{Service: "Agent", Method: "start_task"},
-		}}
-		client, err := NewWithConfig(&Config{Driver: driver, Subscriptions: subscriptions})
-		if err != nil {
-			t.Fatalf("new client with config failed: %v", err)
-		}
-		if client == nil || client.queue == nil {
-			t.Fatal("expect non-nil client queue")
-		}
-		if len(client.Subscriptions()) != 1 || client.Subscriptions()[0] != subscriptions[0] {
-			t.Fatalf("expect configured subscriptions, got %#v", client.Subscriptions())
-		}
-	})
-
-	t.Run("loads config", func(t *testing.T) {
+	t.Run("loads flattened config", func(t *testing.T) {
 		loadTestConfig(t, "messaging.yaml", `messaging:
-  driver: `+defaultDriver+`
-  nats:
-    streams:
-      - name: demo
-        subjects:
-          - demo.>
+  url: ""
+  jetStream: true
+  streams:
+    - name: demo
+      subjects:
+        - demo.>
   subscriptions:
     - name: agent-start-task
       topic: demo.start-task
@@ -123,22 +86,18 @@ func TestNew(t *testing.T) {
         method: start_task
 `)
 
-		client, err := New()
-		if err != nil {
-			t.Fatalf("New() failed: %v", err)
+		cfg := &Config{}
+		if err := config.ScanFrom(cfg, defaultConfigKey); err != nil {
+			t.Fatalf("scan config failed: %v", err)
 		}
-		if client == nil || client.queue == nil {
-			t.Fatal("expect non-nil client queue")
+		if cfg.JetStream != true || len(cfg.Streams) != 1 || len(cfg.Subscriptions) != 1 {
+			t.Fatalf("unexpected flattened config: %#v", cfg)
 		}
-		subscriptions := client.Subscriptions()
-		if len(subscriptions) != 1 {
-			t.Fatalf("expect one subscription, got %#v", subscriptions)
+		if cfg.Subscriptions[0].AckWait != 5*time.Minute {
+			t.Fatalf("unexpected subscription: %#v", cfg.Subscriptions[0])
 		}
-		if subscriptions[0].AckWait != 5*time.Minute || subscriptions[0].Endpoint.Method != "start_task" {
-			t.Fatalf("unexpected loaded subscription: %#v", subscriptions[0])
-		}
-		if len(loadedConfig.Nats.Streams) != 1 {
-			t.Fatalf("expect one NATS stream, got %#v", loadedConfig.Nats.Streams)
+		if _, err := New(); !errors.Is(err, ErrEmptyURL) {
+			t.Fatalf("expect New() to validate URL, got %v", err)
 		}
 	})
 }

@@ -1,6 +1,6 @@
 //go:build local
 
-package nats
+package messaging
 
 import (
 	"context"
@@ -8,30 +8,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fino-io/finokit/messaging"
 	gonats "github.com/nats-io/nats.go"
 )
 
 func TestConfiguredSubscriptionRoundTrip(t *testing.T) {
-	Register()
-
 	topic := fmt.Sprintf("fino2.messaging.%d", time.Now().UnixNano())
-	config := &messaging.Config{
-		Driver: messaging.DriverNATS,
-		Nats: messaging.NatsConfig{
-			URL: "nats://127.0.0.1:4222",
-		},
-		Subscriptions: []*messaging.Subscription{{
+	config := &Config{
+		URL: "nats://127.0.0.1:4222",
+		Subscriptions: []*Subscription{{
 			Name:  "fino2-test",
 			Topic: topic,
-			Endpoint: messaging.Endpoint{
+			Endpoint: Endpoint{
 				Service: "Agent",
 				Method:  "start_task",
 			},
 		}},
 	}
 
-	client, err := messaging.NewWithConfig(config)
+	client, err := NewWithConfig(config)
 	if err != nil {
 		t.Fatalf("create client: %v", err)
 	}
@@ -42,12 +36,12 @@ func TestConfiguredSubscriptionRoundTrip(t *testing.T) {
 		t.Fatalf("unexpected subscriptions: %#v", subscriptions)
 	}
 
-	received := make(chan *messaging.SubMessage, 1)
-	if err := client.Subscribe(subscriptions[0], func(ctx context.Context, _ *messaging.Subscription, message *messaging.SubMessage) error {
-		if got := messaging.GetContextTopic(ctx); got != topic {
+	received := make(chan *SubMessage, 1)
+	if err := client.Subscribe(subscriptions[0], func(ctx context.Context, _ *Subscription, message *SubMessage) error {
+		if got := GetContextTopic(ctx); got != topic {
 			t.Errorf("context topic = %q, want %q", got, topic)
 		}
-		if got := messaging.GetContextMessageId(ctx); got != "message-1" {
+		if got := GetContextMessageId(ctx); got != "message-1" {
 			t.Errorf("context message id = %q, want message-1", got)
 		}
 		received <- message
@@ -56,7 +50,7 @@ func TestConfiguredSubscriptionRoundTrip(t *testing.T) {
 		t.Fatalf("subscribe: %v", err)
 	}
 
-	if err := client.Publish(context.Background(), topic, &messaging.Message{Id: "message-1", Data: `{"task":"demo"}`}); err != nil {
+	if err := client.Publish(context.Background(), topic, &Message{Id: "message-1", Data: `{"task":"demo"}`}); err != nil {
 		t.Fatalf("publish: %v", err)
 	}
 
@@ -71,22 +65,17 @@ func TestConfiguredSubscriptionRoundTrip(t *testing.T) {
 }
 
 func TestConfiguredJetStreamCreatesStreamAndRoundTrips(t *testing.T) {
-	Register()
-
 	suffix := time.Now().UnixNano()
 	stream := fmt.Sprintf("FINO2_%d", suffix)
 	topic := fmt.Sprintf("fino2.jetstream.%d", suffix)
-	config := &messaging.Config{
-		Driver: messaging.DriverNATS,
-		Nats: messaging.NatsConfig{
-			URL:       "nats://127.0.0.1:4222",
-			JetStream: true,
-			Streams: []*messaging.NatsStream{{
-				Name:     stream,
-				Subjects: []string{topic},
-			}},
-		},
-		Subscriptions: []*messaging.Subscription{{
+	config := &Config{
+		URL:       "nats://127.0.0.1:4222",
+		JetStream: true,
+		Streams: []*Stream{{
+			Name:     stream,
+			Subjects: []string{topic},
+		}},
+		Subscriptions: []*Subscription{{
 			Name:  "fino2-jetstream-test",
 			Topic: topic,
 			Group: "fino2-jetstream-test",
@@ -94,14 +83,14 @@ func TestConfiguredJetStreamCreatesStreamAndRoundTrips(t *testing.T) {
 		}},
 	}
 
-	client, err := messaging.NewWithConfig(config)
+	client, err := NewWithConfig(config)
 	if err != nil {
 		t.Fatalf("create client: %v", err)
 	}
 	defer client.Shutdown()
 
 	t.Cleanup(func() {
-		nc, connectErr := gonats.Connect(config.Nats.URL)
+		nc, connectErr := gonats.Connect(config.URL)
 		if connectErr != nil {
 			return
 		}
@@ -112,21 +101,21 @@ func TestConfiguredJetStreamCreatesStreamAndRoundTrips(t *testing.T) {
 		}
 	})
 
-	second, err := messaging.NewWithConfig(config)
+	second, err := NewWithConfig(config)
 	if err != nil {
 		t.Fatalf("create second client with existing stream: %v", err)
 	}
 	second.Shutdown()
 
-	received := make(chan *messaging.SubMessage, 1)
-	if err := client.Subscribe(config.Subscriptions[0], func(_ context.Context, _ *messaging.Subscription, message *messaging.SubMessage) error {
+	received := make(chan *SubMessage, 1)
+	if err := client.Subscribe(config.Subscriptions[0], func(_ context.Context, _ *Subscription, message *SubMessage) error {
 		received <- message
 		return nil
 	}); err != nil {
 		t.Fatalf("subscribe: %v", err)
 	}
 
-	if err := client.Publish(context.Background(), topic, &messaging.Message{Id: "jetstream-1", Data: `{}`}); err != nil {
+	if err := client.Publish(context.Background(), topic, &Message{Id: "jetstream-1", Data: `{}`}); err != nil {
 		t.Fatalf("publish: %v", err)
 	}
 

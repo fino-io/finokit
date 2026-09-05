@@ -1,12 +1,10 @@
-package nats
+package messaging
 
 import (
 	"errors"
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"github.com/fino-io/finokit/messaging"
 )
 
 var errConfigureSubscription = errors.New("configure subscription")
@@ -27,7 +25,7 @@ func (s *failingSubscription) Unsubscribe() error {
 func TestCompleteMessageUsesHandlerResultAsAcknowledgementPolicy(t *testing.T) {
 	t.Run("core nats does not acknowledge", func(t *testing.T) {
 		var acked atomic.Bool
-		message := &messaging.SubMessage{}
+		message := &SubMessage{}
 		message.SetAck(func() { acked.Store(true) })
 
 		completeMessage(message, nil, false)
@@ -39,7 +37,7 @@ func TestCompleteMessageUsesHandlerResultAsAcknowledgementPolicy(t *testing.T) {
 
 	t.Run("success acknowledges", func(t *testing.T) {
 		var acked atomic.Bool
-		message := &messaging.SubMessage{}
+		message := &SubMessage{}
 		message.SetAck(func() { acked.Store(true) })
 
 		completeMessage(message, nil, true)
@@ -51,7 +49,7 @@ func TestCompleteMessageUsesHandlerResultAsAcknowledgementPolicy(t *testing.T) {
 
 	t.Run("failure negatively acknowledges", func(t *testing.T) {
 		var naked atomic.Bool
-		message := &messaging.SubMessage{}
+		message := &SubMessage{}
 		message.SetNak(func() { naked.Store(true) })
 
 		completeMessage(message, errors.New("handler failed"), true)
@@ -63,7 +61,7 @@ func TestCompleteMessageUsesHandlerResultAsAcknowledgementPolicy(t *testing.T) {
 
 	t.Run("explicit terminal action wins", func(t *testing.T) {
 		var acked atomic.Bool
-		message := &messaging.SubMessage{}
+		message := &SubMessage{}
 		message.SetTerm(func() {})
 		message.SetAck(func() { acked.Store(true) })
 		message.Term()
@@ -77,7 +75,7 @@ func TestCompleteMessageUsesHandlerResultAsAcknowledgementPolicy(t *testing.T) {
 }
 
 func TestSubscriptionCarriesNATSConsumerSettings(t *testing.T) {
-	subscription := &messaging.Subscription{
+	subscription := &Subscription{
 		Topic:             "demo.start-task",
 		Pull:              true,
 		AckWait:           5 * time.Minute,
@@ -97,7 +95,7 @@ func TestSubscriptionCarriesNATSConsumerSettings(t *testing.T) {
 func TestConfigureSubscriptionCleansUpAfterPendingLimitFailure(t *testing.T) {
 	subscription := &failingSubscription{}
 
-	err := configureSubscription(subscription, &messaging.Subscription{PendingMsgLimit: 1})
+	err := configureSubscription(subscription, &Subscription{PendingMsgLimit: 1})
 
 	if !errors.Is(err, errConfigureSubscription) {
 		t.Fatalf("expected pending limit error, got %v", err)
@@ -109,22 +107,22 @@ func TestConfigureSubscriptionCleansUpAfterPendingLimitFailure(t *testing.T) {
 
 func TestConfigNormalized(t *testing.T) {
 	t.Run("nil config", func(t *testing.T) {
-		var cfg *messaging.NatsConfig
+		var cfg *Config
 		_, err := normalizeConfig(cfg)
-		if !errors.Is(err, messaging.ErrNilConfig) {
+		if !errors.Is(err, ErrNilConfig) {
 			t.Fatalf("expect ErrNilConfig, got %v", err)
 		}
 	})
 
 	t.Run("empty url", func(t *testing.T) {
-		_, err := normalizeConfig(&messaging.NatsConfig{})
+		_, err := normalizeConfig(&Config{})
 		if !errors.Is(err, ErrEmptyURL) {
 			t.Fatalf("expect ErrEmptyURL, got %v", err)
 		}
 	})
 
 	t.Run("trim url", func(t *testing.T) {
-		cfg, err := normalizeConfig(&messaging.NatsConfig{URL: " nats://127.0.0.1:4222 "})
+		cfg, err := normalizeConfig(&Config{URL: " nats://127.0.0.1:4222 "})
 		if err != nil {
 			t.Fatalf("normalized() failed: %v", err)
 		}
@@ -134,17 +132,17 @@ func TestConfigNormalized(t *testing.T) {
 	})
 }
 
-func TestNew(t *testing.T) {
+func TestNATSNewValidation(t *testing.T) {
 	t.Run("new with config validate args", func(t *testing.T) {
 		client, err := NewWithConfig(nil)
-		if !errors.Is(err, messaging.ErrNilConfig) {
+		if !errors.Is(err, ErrNilConfig) {
 			t.Fatalf("expect ErrNilConfig, got %v", err)
 		}
 		if client != nil {
 			t.Fatalf("expect nil client, got %#v", client)
 		}
 
-		client, err = NewWithConfig(&messaging.NatsConfig{})
+		client, err = NewWithConfig(&Config{})
 		if !errors.Is(err, ErrEmptyURL) {
 			t.Fatalf("expect ErrEmptyURL, got %v", err)
 		}

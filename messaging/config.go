@@ -6,24 +6,16 @@ import (
 	"github.com/fino-io/finokit/config"
 )
 
-const (
-	DriverNATS       = "nats"
-	defaultConfigKey = "messaging"
-)
+const defaultConfigKey = "messaging"
 
 type Config struct {
-	Driver        string          `json:"driver"`
-	Nats          NatsConfig      `json:"nats"`
+	URL           string          `json:"url" default:"nats://127.0.0.1:4222"`
+	JetStream     bool            `json:"jetStream"`
+	Streams       []*Stream       `json:"streams"`
 	Subscriptions []*Subscription `json:"subscriptions"`
 }
 
-type NatsConfig struct {
-	URL       string        `json:"url" default:"nats://127.0.0.1:4222"`
-	JetStream bool          `json:"jetStream"`
-	Streams   []*NatsStream `json:"streams"`
-}
-
-type NatsStream struct {
+type Stream struct {
 	Name     string   `json:"name"`
 	Subjects []string `json:"subjects"`
 }
@@ -37,29 +29,31 @@ func New() (*Client, error) {
 }
 
 func NewWithConfig(cfg *Config) (*Client, error) {
-	queue, err := buildQueue(cfg)
+	normalized, err := normalizeConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	if queue == nil {
-		return nil, ErrNilQueue
+	queue, err := newNATSQueue(normalized)
+	if err != nil {
+		return nil, err
 	}
+
 	return &Client{
 		queue:         queue,
-		subscriptions: cfg.Subscriptions,
+		subscriptions: normalized.Subscriptions,
 	}, nil
 }
 
-func (c *Config) normalized() (*Config, error) {
+func normalizeConfig(c *Config) (*Config, error) {
 	if c == nil {
 		return nil, ErrNilConfig
 	}
 
 	cfg := *c
-	cfg.Driver = strings.ToLower(strings.TrimSpace(cfg.Driver))
-	if cfg.Driver == "" {
-		cfg.Driver = DriverNATS
+	cfg.URL = strings.TrimSpace(cfg.URL)
+	if cfg.URL == "" {
+		return nil, ErrEmptyURL
 	}
 
 	return &cfg, nil

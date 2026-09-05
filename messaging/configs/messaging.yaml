@@ -1,8 +1,6 @@
 messaging:
-  driver: nats
-  nats:
-    url: nats://127.0.0.1:4222
-    jetStream: true
+  url: nats://127.0.0.1:4222
+  jetStream: true
   subscriptions:
     - name: agent-consumer
       topic: demo.start-task

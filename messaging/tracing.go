@@ -1,4 +1,4 @@
-package nats
+package messaging
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 )
 
 // ScopeName identifies NATS messaging instrumentation in OpenTelemetry data.
-const ScopeName = "github.com/fino-io/finokit/messaging/nats"
+const ScopeName = "github.com/fino-io/finokit/messaging"
 
 var natsPropagator = propagation.NewCompositeTextMapPropagator(
 	propagation.TraceContext{},

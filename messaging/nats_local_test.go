@@ -1,7 +1,7 @@
 //go:build local
 // +build local
 
-package nats
+package messaging
 
 import (
 	"context"
@@ -16,7 +16,6 @@ import (
 
 	"github.com/fino-io/finokit/config"
 	"github.com/fino-io/finokit/logs"
-	"github.com/fino-io/finokit/messaging"
 )
 
 func Test_PublishStartTask(t *testing.T) {
@@ -43,7 +42,7 @@ func Test_Subscription(t *testing.T) {
 			continue
 		}
 
-		if err := client.Subscribe(spec, func(ctx context.Context, s *messaging.Subscription, m *messaging.SubMessage) error {
+		if err := client.Subscribe(spec, func(ctx context.Context, s *Subscription, m *SubMessage) error {
 			switch spec.Endpoint.Method {
 			case "start_task":
 				request := &startTaskRequest{}
@@ -81,7 +80,7 @@ type startTaskRequest struct {
 }
 
 func startTask(ctx context.Context, request *startTaskRequest) error {
-	logs.Infow("starting task", "name", request.Name, "topic", messaging.GetContextTopic(ctx))
+	logs.Infow("starting task", "name", request.Name, "topic", GetContextTopic(ctx))
 	return nil
 }
 
@@ -90,7 +89,7 @@ type stopTaskRequest struct {
 }
 
 func stopTask(ctx context.Context, request *stopTaskRequest) error {
-	logs.Infow("stopping task", "name", request.Name, "topic", messaging.GetContextTopic(ctx))
+	logs.Infow("stopping task", "name", request.Name, "topic", GetContextTopic(ctx))
 	return nil
 }
 
@@ -100,15 +99,15 @@ const (
 )
 
 var (
-	messageClient *messaging.Client
-	natsClient    *Nats
+	messageClient *Client
+	natsClient    *natsQueue
 	clientOnce    sync.Once
 )
 
-func mustLoadLocalConfig(t *testing.T) *messaging.Config {
+func mustLoadLocalConfig(t *testing.T) *Config {
 	t.Helper()
 
-	cfg := &messaging.Config{}
+	cfg := &Config{}
 	if err := config.ScanFrom(cfg, "messaging"); err != nil {
 		t.Fatalf("failed to load messaging config: %v", err)
 	}
@@ -117,17 +116,17 @@ func mustLoadLocalConfig(t *testing.T) *messaging.Config {
 
 func initLocalMessaging() {
 	clientOnce.Do(func() {
-		cfg := &messaging.Config{}
+		cfg := &Config{}
 		if err := config.ScanFrom(cfg, "messaging"); err != nil {
 			panic(err)
 		}
 
-		queue, err := NewWithConfig(&cfg.Nats)
+		queue, err := newNATSQueue(cfg)
 		if err != nil {
 			panic(err)
 		}
 
-		wrapped, err := messaging.NewWithQueue(queue)
+		wrapped, err := NewWithQueue(queue)
 		if err != nil {
 			panic(err)
 		}
@@ -136,7 +135,7 @@ func initLocalMessaging() {
 	})
 }
 
-func mustGetMessaging(t *testing.T) *Nats {
+func mustGetMessaging(t *testing.T) *natsQueue {
 	t.Helper()
 
 	initLocalMessaging()
@@ -150,7 +149,7 @@ func PublishStartTask(ctx context.Context, task *startTaskRequest) error {
 		return err
 	}
 
-	return messageClient.Publish(ctx, StartTaskTopic, &messaging.Message{Id: "1", Data: data})
+	return messageClient.Publish(ctx, StartTaskTopic, &Message{Id: "1", Data: data})
 }
 
 func PublishStopTask(ctx context.Context, task *stopTaskRequest) error {
@@ -160,13 +159,13 @@ func PublishStopTask(ctx context.Context, task *stopTaskRequest) error {
 		return err
 	}
 
-	return messageClient.Publish(ctx, StopTasksTopic, &messaging.Message{Id: "2", Data: data})
+	return messageClient.Publish(ctx, StopTasksTopic, &Message{Id: "2", Data: data})
 }
 
 func Test_ClearStream(t *testing.T) {
 	cfg := mustLoadLocalConfig(t)
 
-	nc, err := gonats.Connect(cfg.Nats.URL)
+	nc, err := gonats.Connect(cfg.URL)
 	if err != nil {
 		t.Fatalf("failed to connect nats: %v", err)
 	}
@@ -183,17 +182,17 @@ func Test_ClearStream(t *testing.T) {
 }
 
 func TestNatsSubscribeValidation(t *testing.T) {
-	queue := &Nats{}
+	queue := &natsQueue{}
 
-	if err := queue.Subscribe(nil, func(context.Context, *messaging.Subscription, *messaging.SubMessage) error { return nil }); !errors.Is(err, messaging.ErrNilSubscription) {
+	if err := queue.Subscribe(nil, func(context.Context, *Subscription, *SubMessage) error { return nil }); !errors.Is(err, ErrNilSubscription) {
 		t.Fatalf("expect ErrNilSubscription, got %v", err)
 	}
 
-	if err := queue.Subscribe(&messaging.Subscription{}, func(context.Context, *messaging.Subscription, *messaging.SubMessage) error { return nil }); !errors.Is(err, messaging.ErrEmptyTopic) {
+	if err := queue.Subscribe(&Subscription{}, func(context.Context, *Subscription, *SubMessage) error { return nil }); !errors.Is(err, ErrEmptyTopic) {
 		t.Fatalf("expect ErrEmptyTopic, got %v", err)
 	}
 
-	if err := queue.Subscribe(&messaging.Subscription{Topic: "topic"}, nil); !errors.Is(err, messaging.ErrNilHandler) {
+	if err := queue.Subscribe(&Subscription{Topic: "topic"}, nil); !errors.Is(err, ErrNilHandler) {
 		t.Fatalf("expect ErrNilHandler, got %v", err)
 	}
 }
