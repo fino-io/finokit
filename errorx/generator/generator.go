@@ -179,7 +179,7 @@ func printUsage(w io.Writer) {
 	}
 	_, _ = fmt.Fprintln(w, "usage: errorxgen [-out output-dir] [-doc-out markdown-file] [-pkg package] [-errorx-import import-path] <yaml-file-or-dir> [more-yaml-files-or-dirs...]")
 	_, _ = fmt.Fprintln(w, "yaml format: appCode, bizCode, errorCode")
-	_, _ = fmt.Fprintln(w, "example: go run github.com/fino-io/fino/errorx/cmd/errorxgen -out ./internal/errcode -doc-out ./docs/error-codes.md -pkg errcode ./configs/error_code")
+	_, _ = fmt.Fprintln(w, "example: go run github.com/fino-io/finokit/errorx/cmd/errorxgen -out ./internal/errcode -doc-out ./docs/error-codes.md -pkg errcode ./configs/error_code")
 }
 
 func collectYAMLFiles(inputs []string) ([]string, error) {

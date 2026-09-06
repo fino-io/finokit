@@ -11,7 +11,7 @@
 - `messaging`：消息发布/订阅抽象，当前提供 NATS 实现。
 - `storage`：基于 S3-compatible API 的对象存储客户端，支持 MinIO 和 AWS S3。
 - `errorx`：业务错误码定义与 Go 代码生成工具。
-- `addr`、`idgen`、`lang/goroutine`：地址、ID 和并发相关辅助工具。
+- `addr`、`idgen`：地址和 ID 相关辅助工具。
 
 部分模块的详细用法见对应目录下的 README。
 
