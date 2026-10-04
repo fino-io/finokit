@@ -1,8 +1,6 @@
 logs:
   level: debug
   encode: console  # json or console
-#  levelPattern: /vuln
-#  levelPort: 22001
   output: console
   file:
     path: ./log/app.log

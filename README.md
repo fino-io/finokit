@@ -5,7 +5,7 @@
 ## 模块
 
 - `config`：配置加载、合并、读取与热更新，支持文件、环境变量、命令行和内存数据源。
-- `logs`：兼容封装，统一日志初始化、输出和动态日志级别。
+- `logs`：复用 Core 日志实现，提供配置初始化、上下文字段和 OpenTelemetry trace 信息。
 - `db`：基于 GORM 的 MySQL、PostgreSQL 和 SQLite 连接管理。
 - `redis`：Redis 客户端与配置封装。
 - `messaging`：消息发布/订阅抽象，当前提供 NATS 实现。
@@ -29,7 +29,7 @@ import "github.com/fino-io/finokit/config"
 
 ## 开发
 
-项目使用 Go 1.25.12 或更高版本。常用命令：
+项目使用 Go 1.25.13 或更高版本。常用命令：
 
 ```bash
 make test    # 运行测试并生成覆盖率报告

@@ -7,7 +7,7 @@ require (
 	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/bitly/go-simplejson v0.5.1
 	github.com/fatih/structs v1.1.0
-	github.com/fino-io/core/go v0.0.0-20260901015255-1d46040b458f
+	github.com/fino-io/core/go v0.0.0-20261004042014-b1025cb169cf
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/golang/mock v1.6.0

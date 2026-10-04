@@ -1,83 +1,63 @@
 # Logs
 
-`logs` 是对 `github.com/fino-io/core/go/logs` 的兼容封装。
+`github.com/fino-io/finokit/logs` 复用 Core 的日志实现，负责加载 finokit 配置、传递上下文字段，并将 OpenTelemetry 的 `trace_id`、`span_id` 加入日志。
 
-- 新代码优先直接使用 `logs`
-- `logs` 保留旧包路径和调用方式
-- 底层实现、配置结构和日志行为都直接来自 `logs`
-- 当前兼容层主要集中在 `logs/logs.go`
+日志输出、级别控制和文件资源管理由 `github.com/fino-io/core/go/logs` 提供。`Config`、`FileConfig`、`Level`、`Logger`、`Field`、`Entry` 直接使用 Core 类型；finokit 的 `Service` 在 Core 服务上保留 trace 行为，`WithContext`、`WithLogger` 返回派生服务。
 
-## 与 `logs` 的关系
-
-`logs` 只保留兼容 API，不再维护独立实现。
-
-对应关系：
-
-- `logs.Config` / `FileConfig` / `Level` / `Logger` / `Service` 都是 `logs` 的别名
-- `logs.NewLoggerWith`、`SetLogger`、`SetLogLevel` 最终都调用 `logs`
-- 包级 `Info`、`Infow`、`Errorf` 等函数通过 `logs.Service` 保持旧调用方式和 caller 行为
-
-## 动态日志级别
-
-当同时配置 `levelPattern` 和 `levelPort` 时，底层 logger 会启动一个 HTTP 服务，暴露 `zap.AtomicLevel.ServeHTTP`：
-
-- `GET <levelPattern>`：获取当前日志级别
-- `PUT <levelPattern>`：动态修改日志级别
-
-支持两种 `PUT` 请求体：
-
-- `application/json`，例如 `{"level":"debug"}`
-- `application/x-www-form-urlencoded`，例如 `level=debug`
-
-## 主要接口
+## 使用
 
 ```go
 logger := logs.NewLoggerWith(&logs.Config{
-Level:  "info",
-Encode: "console",
-Output: "console",
+    Level:  "info",
+    Encode: "console",
+    Output: "console",
 })
-
 logs.SetLogger(logger)
 logs.Infow("service started", "name", "api")
+
+ctx = logs.WithFields(ctx, logs.Field{Key: "request_id", Value: "request-1"})
+logs.Ctx(ctx).Infow("request handled", "result", "ok")
 ```
 
-如需独立实例：
+上下文存在有效 span 时，真实 trace 信息覆盖调用方提供的同名字段；字段合并不会修改调用方的切片。
+
+独立服务可按上下文和 logger 派生，原服务保持不变：
 
 ```go
-svc := logs.NewService(logger)
-svc.Infow("worker ready", "id", 7)
+service := logs.NewService(logger).WithContext(ctx)
+worker := service.WithLogger(workerLogger)
+worker.Infow("worker ready", "id", 7)
 ```
 
-## 配置示例
+## 配置
+
+初始化 finokit 配置后，调用 `logs.NewConfig()` 加载 `logs` 节点并替换默认 logger。读取失败时保留原 logger。
 
 ```yaml
 logs:
   level: info
   encode: console
   output: console
-  levelPattern: /log/level
-  levelPort: 22001
+  file:
+    path: ./logs/app.log
+    encode: json
+    maxSize: 100
+    maxBackups: 10
+    maxAge: 30
 ```
 
-## 动态级别接口
+`output: file` 使用文件配置，控制台输出使用顶层 `encode`。完整配置类型和默认值由 Core 提供。
 
-如无兼容包路径要求，建议直接改用 `logs` 包。
+## 动态级别和资源生命周期
 
-配置了动态级别接口后，可通过 HTTP 调整级别：
+将 logger 的 handler 挂载到应用已有的 HTTP 服务：
 
-```bash
-# 查看当前级别
-curl http://127.0.0.1:22001/log/level
-
-# 设置为 debug（JSON）
-curl -X PUT \
-  -H "Content-Type: application/json" \
-  -d '{"level":"debug"}' \
-  http://127.0.0.1:22001/log/level
-
-# 设置为 warn（表单）
-curl -X PUT \
-  -d "level=warn" \
-  http://127.0.0.1:22001/log/level
+```go
+mux.Handle("/log/level", logger.LevelHandler())
 ```
+
+`GET /log/level` 获取级别，`PUT /log/level` 设置级别；请求体支持 JSON `{"level":"debug"}` 或表单 `level=debug`。派生 logger 共享级别。
+
+关闭文件 logger 前调用 `Sync()`，停止所有共享该文件资源的使用者后调用 `Close()`。派生 logger 共享资源，重复关闭只释放一次；替换默认 logger 时，由应用管理旧 logger 的关闭时机。
+
+自定义 `Logger` 需要实现 `SetLevel`、`GetLevel`、`With`、`Log`、`LevelHandler`、`Sync`、`Close`。finokit 的 trace 包装会透传级别、handler 和生命周期方法。

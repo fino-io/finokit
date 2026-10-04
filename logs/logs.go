@@ -13,7 +13,6 @@ type Level = corelogs.Level
 type Logger = corelogs.Logger
 type Field = corelogs.Field
 type Entry = corelogs.Entry
-type Service = corelogs.Service
 
 const (
 	DebugLevel  = corelogs.DebugLevel
@@ -58,91 +57,78 @@ func SetLogLevel(level Level) {
 	corelogs.SetLogLevel(level)
 }
 
-func Debug(args ...interface{}) {
+func Debug(args ...any) {
 	defaultService().Debug(args...)
 }
 
-func Info(args ...interface{}) {
+func Info(args ...any) {
 	defaultService().Info(args...)
 }
 
-func Warn(args ...interface{}) {
+func Warn(args ...any) {
 	defaultService().Warn(args...)
 }
 
-func Error(args ...interface{}) {
+func Error(args ...any) {
 	defaultService().Error(args...)
 }
 
-func Fatal(args ...interface{}) {
+func Fatal(args ...any) {
 	defaultService().Fatal(args...)
 }
 
-func Debugf(template string, args ...interface{}) {
+func Debugf(template string, args ...any) {
 	defaultService().Debugf(template, args...)
 }
 
-func Infof(template string, args ...interface{}) {
+func Infof(template string, args ...any) {
 	defaultService().Infof(template, args...)
 }
 
-func Warnf(template string, args ...interface{}) {
+func Warnf(template string, args ...any) {
 	defaultService().Warnf(template, args...)
 }
 
-func Errorf(template string, args ...interface{}) {
+func Errorf(template string, args ...any) {
 	defaultService().Errorf(template, args...)
 }
 
-func Fatalf(template string, args ...interface{}) {
+func Fatalf(template string, args ...any) {
 	defaultService().Fatalf(template, args...)
 }
 
-func Debugw(msg string, keysAndValues ...interface{}) {
+func Debugw(msg string, keysAndValues ...any) {
 	defaultService().Debugw(msg, keysAndValues...)
 }
 
-func Infow(msg string, keysAndValues ...interface{}) {
+func Infow(msg string, keysAndValues ...any) {
 	defaultService().Infow(msg, keysAndValues...)
 }
 
-func Warnw(msg string, keysAndValues ...interface{}) {
+func Warnw(msg string, keysAndValues ...any) {
 	defaultService().Warnw(msg, keysAndValues...)
 }
 
-func Errorw(msg string, keysAndValues ...interface{}) {
+func Errorw(msg string, keysAndValues ...any) {
 	defaultService().Errorw(msg, keysAndValues...)
 }
 
-func Fatalw(msg string, keysAndValues ...interface{}) {
+func Fatalw(msg string, keysAndValues ...any) {
 	defaultService().Fatalw(msg, keysAndValues...)
 }
 
-func NewError(args ...interface{}) error {
+func NewError(args ...any) error {
 	return defaultService().NewError(args...)
 }
 
-func NewErrorf(template string, args ...interface{}) error {
+func NewErrorf(template string, args ...any) error {
 	return defaultService().NewErrorf(template, args...)
 }
 
-func NewErrorw(msg string, keysAndValues ...interface{}) error {
+func NewErrorw(msg string, keysAndValues ...any) error {
 	return defaultService().NewErrorw(msg, keysAndValues...)
 }
 
 func WithFields(ctx context.Context, fields ...Field) context.Context {
 	return corelogs.WithFields(ctx, fields...)
-}
-
-// Ctx returns the default logging service bound to ctx.
-func Ctx(ctx context.Context) *Service {
-	return NewService(corelogs.DefaultLogger()).WithContext(ctx)
-}
-
-func NewService(logger Logger) *Service {
-	return corelogs.NewService(withTrace(logger))
-}
-
-func defaultService() *corelogs.Service {
-	return corelogs.NewServiceWithCallerSkip(withTrace(corelogs.DefaultLogger()), 1)
 }
