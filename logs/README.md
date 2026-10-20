@@ -7,11 +7,14 @@
 ## 使用
 
 ```go
-logger := logs.NewLoggerWith(&logs.Config{
+logger, err := logs.NewLoggerWith(&logs.Config{
     Level:  "info",
     Encode: "console",
     Output: "console",
 })
+if err != nil {
+    return err
+}
 logs.SetLogger(logger)
 logs.Infow("service started", "name", "api")
 
@@ -31,7 +34,7 @@ worker.Infow("worker ready", "id", 7)
 
 ## 配置
 
-初始化 finokit 配置后，调用 `logs.NewConfig()` 加载 `logs` 节点并替换默认 logger。读取失败时保留原 logger。
+初始化 finokit 配置后，调用 `logs.NewConfig()` 加载 `logs` 节点并替换默认 logger。读取失败或日志配置无效时返回错误，并保留原 logger。
 
 ```yaml
 logs:

@@ -28,8 +28,9 @@ func NewDefaultConfig() *Config {
 	return corelogs.NewDefaultConfig()
 }
 
-func NewLoggerWith(cfg *Config) Logger {
-	return withTrace(corelogs.NewLoggerWith(cfg))
+func NewLoggerWith(cfg *Config) (Logger, error) {
+	logger, err := corelogs.NewLoggerWith(cfg)
+	return withTrace(logger), err
 }
 
 // NewConfig loads the logs section from the current default config and
@@ -40,7 +41,11 @@ func NewConfig() error {
 		return err
 	}
 
-	SetLogger(NewLoggerWith(cfg))
+	logger, err := NewLoggerWith(cfg)
+	if err != nil {
+		return err
+	}
+	SetLogger(logger)
 
 	return nil
 }

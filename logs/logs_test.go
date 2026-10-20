@@ -83,7 +83,7 @@ func TestPackageDefaultLoggerSwap(t *testing.T) {
 func TestFileOutput(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "app.log")
-	logger := NewLoggerWith(&Config{
+	logger, err := NewLoggerWith(&Config{
 		Level:  "info",
 		Encode: "json",
 		Output: "file",
@@ -95,6 +95,7 @@ func TestFileOutput(t *testing.T) {
 			MaxAge:     1,
 		},
 	})
+	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, logger.Close()) })
 
 	logger.Log(context.Background(), Entry{
@@ -227,7 +228,8 @@ func TestTraceLoggerOwnsFields(t *testing.T) {
 }
 
 func TestLoggerLevelHandler(t *testing.T) {
-	logger := NewLoggerWith(&Config{Level: "info", Output: "console"})
+	logger, err := NewLoggerWith(&Config{Level: "info", Output: "console"})
+	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, logger.Close()) })
 	child := logger.With(Field{Key: "component", Value: "worker"})
 	request := httptest.NewRequest(http.MethodPut, "/log/level", strings.NewReader(`{"level":"debug"}`))
@@ -296,12 +298,13 @@ func logFromServerContext(ctx context.Context) int {
 
 func newTestFileLogger(t *testing.T, path string) Logger {
 	t.Helper()
-	logger := NewLoggerWith(&Config{
+	logger, err := NewLoggerWith(&Config{
 		Level:  "info",
 		Encode: "json",
 		Output: "file",
 		File:   FileConfig{Path: path, Encode: "json"},
 	})
+	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, logger.Close()) })
 	return logger
 }
@@ -315,4 +318,27 @@ func readServerLogEntry(t *testing.T, path string) map[string]string {
 	var entry map[string]string
 	require.NoError(t, json.Unmarshal(data, &entry))
 	return entry
+}
+
+func TestNewLoggerWithRejectsInvalidConfig(t *testing.T) {
+	logger, err := NewLoggerWith(&Config{Level: "invalid"})
+	require.ErrorContains(t, err, "invalid log level")
+	require.Nil(t, logger)
+}
+
+func TestNewConfigPreservesLoggerOnInvalidConfig(t *testing.T) {
+	prev := DefaultLogger()
+	t.Cleanup(func() { SetLogger(prev) })
+	recorder := &recordingLogger{level: InfoLevel}
+	SetLogger(recorder)
+
+	require.NoError(t, config.InitDefault(config.WithWatcherDisabled()))
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "logs.yaml"), []byte("logs:\n  level: invalid\n"), 0o644))
+	require.NoError(t, config.LoadPath(dir))
+
+	require.ErrorContains(t, NewConfig(), "invalid log level")
+	Infow("preserved")
+	require.Len(t, recorder.entries, 1)
+	require.Equal(t, "preserved", recorder.entries[0].Message)
 }
