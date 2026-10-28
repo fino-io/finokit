@@ -43,6 +43,7 @@ type Definition struct {
 	Description string `yaml:"description,omitempty"`
 	CountInSLA  *bool  `yaml:"countInSLA,omitempty"`
 	HTTPStatus  int    `yaml:"httpStatus,omitempty"`
+	GRPCCode    string `yaml:"grpcCode,omitempty"`
 }
 
 type File struct {
@@ -258,6 +259,9 @@ func validateSpec(path string, spec File) error {
 		if errDef.HTTPStatus != 0 && (errDef.HTTPStatus < 100 || errDef.HTTPStatus > 599) {
 			return fmt.Errorf("%s: invalid httpStatus for %s: must be in [100,599]", path, errDef.Name)
 		}
+		if errDef.GRPCCode != "" && !strings.Contains("|Canceled|Unknown|InvalidArgument|DeadlineExceeded|NotFound|AlreadyExists|PermissionDenied|ResourceExhausted|FailedPrecondition|Aborted|OutOfRange|Unimplemented|Internal|Unavailable|DataLoss|Unauthenticated|", "|"+errDef.GRPCCode+"|") {
+			return fmt.Errorf("%s: invalid grpcCode for %s: %q", path, errDef.Name, errDef.GRPCCode)
+		}
 		if _, ok := seenNames[errDef.Name]; ok {
 			return fmt.Errorf("%s: duplicate error name %q", path, errDef.Name)
 		}
@@ -468,6 +472,9 @@ func writeDefinition(buf *bytes.Buffer, appCode int, bizCode int, errDef Definit
 	_, _ = fmt.Fprintf(buf, "%svar %s = errorx.Define(\n\t%d,\n\t%q,\n\terrorx.CountInSLA(%t),\n", comment, errDef.Name, composeErrorCode(appCode, bizCode, errDef.Code), errDef.Message, errDef.countInSLA())
 	if errDef.HTTPStatus != 0 {
 		_, _ = fmt.Fprintf(buf, "\terrorx.HTTPStatus(%d),\n", errDef.HTTPStatus)
+	}
+	if errDef.GRPCCode != "" {
+		_, _ = fmt.Fprintf(buf, "\terrorx.GRPCCode(%q),\n", errDef.GRPCCode)
 	}
 	_, _ = fmt.Fprint(buf, ")\n\n")
 }
