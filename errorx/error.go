@@ -125,8 +125,6 @@ func (e *Error) StatusCode() int {
 	return e.def.StatusCode()
 }
 
-func (e *Error) GRPCCode() string { return e.def.GRPCCode }
-
 func (e *Error) Message() string {
 	return e.message
 }

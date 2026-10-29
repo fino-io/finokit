@@ -17,7 +17,6 @@ type Definition struct {
 	Message    string
 	CountInSLA bool
 	HTTPStatus int
-	GRPCCode   string
 }
 
 type DefineOption func(*Definition)
@@ -44,10 +43,6 @@ func HTTPStatus(status int) DefineOption {
 	return func(def *Definition) {
 		def.HTTPStatus = status
 	}
-}
-
-func GRPCCode(code string) DefineOption {
-	return func(def *Definition) { def.GRPCCode = code }
 }
 
 func (def Definition) New(opts ...Option) error {
